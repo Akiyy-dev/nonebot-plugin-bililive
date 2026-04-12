@@ -40,6 +40,10 @@ Repository = "https://github.com/Akiyy-dev/nonebot-plugin-bililive"
 Documentation = "https://github.com/Akiyy-dev/nonebot-plugin-bililive#readme"
 Issues = "https://github.com/Akiyy-dev/nonebot-plugin-bililive/issues"
 
+[project.entry-points."nonebot.plugin"]
+nonebot-plugin-bililive = "nonebot_plugin_bililive"
+nonebot_plugin_bililive = "nonebot_plugin_bililive"
+
 [tool.nonebot]
 adapters = [
     { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
