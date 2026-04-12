@@ -17,9 +17,6 @@ _✨ 将 B 站 UP 主动态与直播推送到 QQ 的 NoneBot2 插件 ✨_
 	<img src="https://img.shields.io/pypi/v/nonebot-plugin-bililive.svg" alt="pypi">
 </a>
 <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="python">
-<a href="https://jq.qq.com/?_wv=1027&k=sHPbCRAd">
-	<img src="https://img.shields.io/badge/QQ%E7%BE%A4-629574472-orange" alt="qq group">
-</a>
 
 </div>
 
