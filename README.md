@@ -69,33 +69,16 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 
 <details>
 <summary>使用包管理器安装</summary>
+在 nonebot2 项目的插件目录下, 打开命令行, 进入虚拟环境, 输入相应的安装命令
 
-<details>
-<summary>pip</summary>
+    pip install nonebot-plugin-bililive
 
-	pip install nonebot-plugin-bililive
 
-</details>
+打开 nonebot2 项目根目录下的 `pyproject.toml` 文件, 在 `[tool.nonebot.plugins]` 部分追加写入
 
-<details>
-<summary>pdm</summary>
-
-	pdm add nonebot-plugin-bililive
+    nonebot-plugin-bililive = ["nonebot-plugin-bililive"]
 
 </details>
-
-<details>
-<summary>poetry</summary>
-
-	poetry add nonebot-plugin-bililive
-
-</details>
-
-</details>
-
-安装后，在 NoneBot2 项目的 pyproject.toml 中加入：
-
-	plugins = ["nonebot_plugin_bililive"]
 
 ## ⚙️ 配置
 
