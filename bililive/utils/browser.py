@@ -63,7 +63,10 @@ async def get_browser() -> BrowserContext:
     return _browser
 
 
-async def get_dynamic_screenshot(dynamic_id, style=plugin_config.bililive_screenshot_style):
+async def get_dynamic_screenshot(
+    dynamic_id,
+    style=plugin_config.bililive_screenshot_style,
+):
     """获取动态截图"""
     image: bytes | None = None
     err = ""
@@ -153,9 +156,8 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
         if plugin_config.bililive_dynamic_font
         else "setFont()"
     )
-    await page.wait_for_function(
-        f"getMobileStyle({'true' if plugin_config.bililive_dynamic_big_image else 'false'})"
-    )
+    big_image = "true" if plugin_config.bililive_dynamic_big_image else "false"
+    await page.wait_for_function(f"getMobileStyle({big_image})")
 
     await page.wait_for_load_state("networkidle")
     await page.wait_for_load_state("domcontentloaded")

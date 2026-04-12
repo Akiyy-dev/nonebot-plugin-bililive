@@ -72,7 +72,9 @@ async def b23_extract(text: str):
         url = f"https://b23.tv/{b23[2]}"
         for _ in range(3):
             with contextlib.suppress(Exception):
-                async with httpx.AsyncClient(proxy=plugin_config.bililive_proxy) as client:
+                async with httpx.AsyncClient(
+                    proxy=plugin_config.bililive_proxy
+                ) as client:
                     resp = await client.get(url, follow_redirects=True)
                 break
         else:
