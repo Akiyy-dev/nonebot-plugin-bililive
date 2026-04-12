@@ -8,7 +8,7 @@ from tortoise import Tortoise
 from tortoise.connection import connections
 
 from ..utils import get_path
-from ..version import VERSION as HBVERSION
+from ..version import VERSION as APP_VERSION
 from .models import Group, Sub, User, Version
 
 uid_list = {"live": {"list": [], "index": 0}, "dynamic": {"list": [], "index": 0}}
@@ -23,16 +23,16 @@ class DB:
         """初始化数据库"""
         config = {
             "connections": {
-                # "haruka_bot": {
+                # "bililive": {
                 #     "engine": "tortoise.backends.sqlite",
                 #     "credentials": {"file_path": get_path("data.sqlite3")},
                 # },
-                "haruka_bot": f"sqlite://{get_path('data.sqlite3')}"
+                "bililive": f"sqlite://{get_path('data.sqlite3')}"
             },
             "apps": {
-                "haruka_bot_app": {
-                    "models": ["haruka_bot.database.models"],
-                    "default_connection": "haruka_bot",
+                "bililive_app": {
+                    "models": ["bililive.database.models"],
+                    "default_connection": "bililive",
                 }
             },
         }
@@ -188,11 +188,11 @@ class DB:
         if not DBVERSION:
             # 检查是否有旧的 json 数据库需要迁移
             await cls.migrate_from_json()
-            await Version.add(version=str(HBVERSION))
+            await Version.add(version=str(APP_VERSION))
             return
-        if DBVERSION != HBVERSION:
+        if DBVERSION != APP_VERSION:
             # await cls._migrate()
-            await Version.update({}, version=HBVERSION)
+            await Version.update({}, version=APP_VERSION)
             return
 
     @classmethod

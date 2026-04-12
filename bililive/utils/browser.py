@@ -18,7 +18,7 @@ _browser: BrowserContext | None = None
 mobile_js = Path(__file__).parent.joinpath("mobile.js")
 
 
-async def init_browser(proxy=plugin_config.haruka_proxy, **kwargs) -> BrowserContext:
+async def init_browser(proxy=plugin_config.bililive_proxy, **kwargs) -> BrowserContext:
     logger.info("初始化浏览器")
     if proxy:
         kwargs["proxy"] = {"server": proxy}
@@ -28,20 +28,20 @@ async def init_browser(proxy=plugin_config.haruka_proxy, **kwargs) -> BrowserCon
     browser_data.mkdir(parents=True, exist_ok=True)
     browser_context = await p.chromium.launch_persistent_context(
         browser_data,
-        user_agent=plugin_config.haruka_browser_ua
+        user_agent=plugin_config.bililive_browser_ua
         or (
             (
                 "Mozilla/5.0 (Linux; Android 10; RMX1911) AppleWebKit/537.36 "
                 "(KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36"
             )
-            if plugin_config.haruka_screenshot_style.lower() == "mobile"
+            if plugin_config.bililive_screenshot_style.lower() == "mobile"
             else None
         ),
         device_scale_factor=2,
-        timeout=plugin_config.haruka_dynamic_timeout * 1000,
+        timeout=plugin_config.bililive_dynamic_timeout * 1000,
         **kwargs,
     )
-    if plugin_config.haruka_screenshot_style.lower() != "mobile":
+    if plugin_config.bililive_screenshot_style.lower() != "mobile":
         await browser_context.add_cookies(
             [
                 {
@@ -63,7 +63,7 @@ async def get_browser() -> BrowserContext:
     return _browser
 
 
-async def get_dynamic_screenshot(dynamic_id, style=plugin_config.haruka_screenshot_style):
+async def get_dynamic_screenshot(dynamic_id, style=plugin_config.bililive_screenshot_style):
     """获取动态截图"""
     image: bytes | None = None
     err = ""
@@ -115,9 +115,9 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
     url = f"https://m.bilibili.com/dynamic/{dynamic_id}"
     await page.set_viewport_size({"width": 460, "height": 780})
     await page.route(re.compile("^https://static.graiax/fonts/(.+)$"), fill_font)
-    if plugin_config.haruka_captcha_address:
+    if plugin_config.bililive_captcha_address:
         captcha = CaptchaInfer(
-            plugin_config.haruka_captcha_address, plugin_config.haruka_captcha_token
+            plugin_config.bililive_captcha_address, plugin_config.bililive_captcha_token
         )
         page = await captcha.solve_captcha(page, url)
     else:
@@ -148,20 +148,20 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
     await page.add_script_tag(path=mobile_js)
 
     await page.evaluate(
-        f'setFont("{plugin_config.haruka_dynamic_font}", '
-        f'"{plugin_config.haruka_dynamic_font_source}")'
-        if plugin_config.haruka_dynamic_font
+        f'setFont("{plugin_config.bililive_dynamic_font}", '
+        f'"{plugin_config.bililive_dynamic_font_source}")'
+        if plugin_config.bililive_dynamic_font
         else "setFont()"
     )
     await page.wait_for_function(
-        f"getMobileStyle({'true' if plugin_config.haruka_dynamic_big_image else 'false'})"
+        f"getMobileStyle({'true' if plugin_config.bililive_dynamic_big_image else 'false'})"
     )
 
     await page.wait_for_load_state("networkidle")
     await page.wait_for_load_state("domcontentloaded")
 
     await page.wait_for_timeout(
-        1000 if plugin_config.haruka_dynamic_font_source == "remote" else 200
+        1000 if plugin_config.bililive_dynamic_font_source == "remote" else 200
     )
 
     # 判断字体是否加载完成
@@ -201,7 +201,7 @@ def install():
 
     def restore_env():
         os.environ.pop("PLAYWRIGHT_DOWNLOAD_HOST", None)
-        if plugin_config.haruka_proxy:
+        if plugin_config.bililive_proxy:
             os.environ.pop("HTTPS_PROXY", None)
         if original_proxy is not None:
             os.environ["HTTPS_PROXY"] = original_proxy
@@ -209,8 +209,8 @@ def install():
     logger.info("检查 Chromium 更新")
     sys.argv = ["", "install", "chromium"]
     original_proxy = os.environ.get("HTTPS_PROXY")
-    if plugin_config.haruka_proxy:
-        os.environ["HTTPS_PROXY"] = plugin_config.haruka_proxy
+    if plugin_config.bililive_proxy:
+        os.environ["HTTPS_PROXY"] = plugin_config.bililive_proxy
     success = False
     try:
         main()
@@ -232,7 +232,8 @@ async def check_playwright_env():
     except Exception as err:
         raise ImportError(
             "加载失败，Playwright 依赖不全，"
-            "解决方法：https://haruka-bot.sk415.icu/faq.html#playwright-依赖不全"
+            "解决方法：https://github.com/Akiyy-dev/nonebot-plugin-bililive/"
+            "blob/master/docs/faq.md#playwright-依赖不全"
         ) from err
 
 

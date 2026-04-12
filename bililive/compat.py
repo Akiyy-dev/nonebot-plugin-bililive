@@ -22,13 +22,13 @@ def patch_httpx_compat():
     if not hasattr(httpx_types, "ProxiesTypes") and hasattr(httpx_types, "ProxyTypes"):
         httpx_types.ProxiesTypes = httpx_types.ProxyTypes
 
-    if getattr(httpx.AsyncClient, "__haruka_compat_patch__", False):
+    if getattr(httpx.AsyncClient, "__bililive_compat_patch__", False):
         return
 
     original_async_client = httpx.AsyncClient
 
     class CompatAsyncClient(original_async_client):
-        __haruka_compat_patch__ = True
+        __bililive_compat_patch__ = True
 
         def __init__(self, *args, proxies=Ellipsis, **kwargs):
             if proxies is not Ellipsis and "proxy" not in kwargs:

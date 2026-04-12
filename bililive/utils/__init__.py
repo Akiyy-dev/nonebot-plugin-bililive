@@ -33,11 +33,11 @@ from ..config import plugin_config
 
 def get_path(*other):
     """获取数据文件绝对路径"""
-    if plugin_config.haruka_dir:
-        dir_path = Path(plugin_config.haruka_dir).resolve()
+    if plugin_config.bililive_dir:
+        dir_path = Path(plugin_config.bililive_dir).resolve()
     else:
         dir_path = Path.cwd().joinpath("data")
-        # dir_path = Path.cwd().joinpath('data', 'haruka_bot')
+        # dir_path = Path.cwd().joinpath('data', 'bililive')
     return str(dir_path.joinpath(*other))
 
 
@@ -72,7 +72,7 @@ async def b23_extract(text: str):
         url = f"https://b23.tv/{b23[2]}"
         for _ in range(3):
             with contextlib.suppress(Exception):
-                async with httpx.AsyncClient(proxy=plugin_config.haruka_proxy) as client:
+                async with httpx.AsyncClient(proxy=plugin_config.bililive_proxy) as client:
                     resp = await client.get(url, follow_redirects=True)
                 break
         else:
@@ -103,7 +103,7 @@ async def get_user_name_by_uid(uid: int | str) -> str | None:
         "Referer": "https://www.bilibili.com/",
     }
     async with httpx.AsyncClient(
-        proxy=plugin_config.haruka_proxy,
+        proxy=plugin_config.bililive_proxy,
         headers=headers,
         timeout=20,
         follow_redirects=True,
@@ -172,7 +172,7 @@ async def group_only(
 
 
 def to_me():
-    if plugin_config.haruka_to_me:
+    if plugin_config.bililive_to_me:
         from nonebot.rule import to_me
 
         return to_me()
@@ -246,7 +246,10 @@ async def safe_send(bot_id, send_type, type_id, message, at=False):
             await db.delete_group(id=type_id)
             logger.error(f"推送失败，群（{type_id}）不存在，已自动清理群订阅列表")
         elif e.info["msg"] == "SEND_MSG_API_ERROR":
-            url = "https://haruka-bot.sk415.icu/usage/faq.html#机器人不发消息也没反应"
+            url = (
+                "https://github.com/Akiyy-dev/nonebot-plugin-bililive/blob/master/"
+                "docs/faq.md#机器人不发消息也没反应"
+            )
             logger.error(f"推送失败，账号可能被风控（{url}），错误信息：{e.info}")
         else:
             logger.error(f"推送失败，未知错误，错误信息：{e.info}")
@@ -260,14 +263,14 @@ async def get_type_id(event: MessageEvent):
 
 def check_proxy():
     """检查代理是否有效"""
-    if plugin_config.haruka_proxy:
+    if plugin_config.bililive_proxy:
         logger.info("检查代理是否有效")
         try:
-            with httpx.Client(proxy=plugin_config.haruka_proxy, timeout=2) as client:
+            with httpx.Client(proxy=plugin_config.bililive_proxy, timeout=2) as client:
                 client.get("https://icanhazip.com/")
         except Exception as err:
             raise RuntimeError(
-                "加载失败，代理无法连接，请检查 HARUKA_PROXY 后重试"
+                "加载失败，代理无法连接，请检查 BILILIVE_PROXY 后重试"
             ) from err
 
 
@@ -275,7 +278,7 @@ def on_startup():
     """安装依赖并检查当前环境是否满足运行条件"""
     if plugin_config.fastapi_reload and sys.platform == "win32":
         raise ImportError(
-            "加载失败，Windows 必须设置 FASTAPI_RELOAD=false 才能正常运行 HarukaBot"
+            "加载失败，Windows 必须设置 FASTAPI_RELOAD=false 才能正常运行 BiliLive"
         )
     try:  # 如果开启 realod 只在第一次运行
         asyncio.get_running_loop()
@@ -291,10 +294,10 @@ def on_startup():
 
 
 def on_command(cmd, *args, **kwargs):
-    return _on_command(plugin_config.haruka_command_prefix + cmd, *args, **kwargs)
+    return _on_command(plugin_config.bililive_command_prefix + cmd, *args, **kwargs)
 
 
-PROXIES = {"all://": plugin_config.haruka_proxy}
+PROXIES = {"all://": plugin_config.bililive_proxy}
 
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler  # noqa

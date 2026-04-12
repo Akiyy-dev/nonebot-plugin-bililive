@@ -1,14 +1,14 @@
-#  安装 HarukaBot
+#  安装 BiliLive
 
 ::: warning 前提条件
-HarukaBot 基于 [NoneBot2](https://github.com/nonebot/nonebot2) 开发，因此依赖于 [Python3.8+](https://www.python.org/downloads/release/python-386/)。不会安装 Python 的可以参考 [廖雪峰的教程](https://www.liaoxuefeng.com/wiki/1016959663602400/1016959856222624)。
+BiliLive 基于 [NoneBot2](https://github.com/nonebot/nonebot2) 开发，因此依赖于 [Python3.8+](https://www.python.org/downloads/release/python-386/)。不会安装 Python 的可以参考 [廖雪峰的教程](https://www.liaoxuefeng.com/wiki/1016959663602400/1016959856222624)。
 :::
 
 ::: danger 警告
 
 [NoneBot2](https://github.com/nonebot/nonebot2) 与 [NoneBot](https://github.com/nonebot/nonebot) **不兼容且无法共存**！如果你曾经使用过 NoneBot 或基于 NoneBot 开发的机器人（如：[yobot](https://github.com/pcrbot/yobot)、[HoshinoBot](https://github.com/Ice-Cirno/HoshinoBot)、[dd-bot](https://github.com/SK-415/dd-bot)），或者你不确定是否安装过 NoneBot。
 
-那么在**开始安装之前**，请先尝试在终端（Powershell/cmd）内执行 `pip uninstall nonebot` **卸载** NoneBot，或者创建一个 [虚拟环境](https://docs.python.org/zh-cn/3/library/venv.html#creating-virtual-environments) 使 HarukaBot 可以与 NoneBot 共存。
+那么在**开始安装之前**，请先尝试在终端（Powershell/cmd）内执行 `pip uninstall nonebot` **卸载** NoneBot，或者创建一个 [虚拟环境](https://docs.python.org/zh-cn/3/library/venv.html#creating-virtual-environments) 使 BiliLive 可以与 NoneBot 共存。
  :::
 
 ## 脚手架安装（推荐）
@@ -25,14 +25,14 @@ HarukaBot 基于 [NoneBot2](https://github.com/nonebot/nonebot2) 开发，因此
     ::: code-group-item pip
 
     ```sh
-    pip install haruka-bot
+    pip install nonebot-plugin-bililive
     ```
     :::
 
     ::: code-group-item poetry
 
     ```sh
-    poetry add haruka-bot
+    poetry add nonebot-plugin-bililive
     ```
     :::
     ::::
@@ -42,7 +42,7 @@ HarukaBot 基于 [NoneBot2](https://github.com/nonebot/nonebot2) 开发，因此
     <CodeGroupItem title="pip">
 
     ```sh
-    pip install haruka-bot -i https://pypi.tuna.tsinghua.edu.cn/simple/
+    pip install nonebot-plugin-bililive -i https://pypi.tuna.tsinghua.edu.cn/simple/
     ```
     </CodeGroupItem>
     <CodeGroupItem title="poetry">
@@ -54,16 +54,16 @@ HarukaBot 基于 [NoneBot2](https://github.com/nonebot/nonebot2) 开发，因此
     </CodeGroup>
     :::
 
-3. 启动 HarukaBot。
+3. 启动 BiliLive。
 
     ```sh
-    hb run
+    bililive run
     ```
 
 > 以后启动只需在**相同文件夹**内执行最后一步即可
 
-::: tip 怎么更新 HarukaBot？
-详见 [常见问题](/faq.md#怎么更新-harukabot)
+::: tip 怎么更新 BiliLive？
+详见 [常见问题](/faq.md#怎么更新-bililive)
 :::
 
 ## 从 NoneBot2 插件商店安装（适用于 NoneBot2 用户）
@@ -71,10 +71,10 @@ HarukaBot 基于 [NoneBot2](https://github.com/nonebot/nonebot2) 开发，因此
 1. 使用 `nb-cli` 命令从 [NoneBot2 商店](https://v2.nonebot.dev/store.html) 安装。
 
     ```sh
-    nb plugin install haruka_bot
+    nb plugin install nonebot-plugin-bililive
     ```
 
-2. （可选）在 bot 根目录的 `.env.*` 文件中，添加 `HARUKA_DIR="储存路径"` （不设置默认为 `./data/`）设置 HarukaBot 数据文件的存储路径。
+2. （可选）在 bot 根目录的 `.env.*` 文件中，添加 `BILILIVE_DIR="储存路径"` （不设置默认为 `./data/`）设置 BiliLive 数据文件的存储路径。
 
 3. 安装完成后重启 `NoneBot2 项目` 即可使用。
 
@@ -87,9 +87,9 @@ HarukaBot 基于 [NoneBot2](https://github.com/nonebot/nonebot2) 开发，因此
 
 ```sh
 #master
-pip install --upgrade git+https://github.com/SK-415/HarukaBot.git@master
+pip install --upgrade git+https://github.com/Akiyy-dev/nonebot-plugin-bililive.git@master
 #dev
-pip install --upgrade git+https://github.com/SK-415/HarukaBot.git@dev
+pip install --upgrade git+https://github.com/Akiyy-dev/nonebot-plugin-bililive.git@dev
 ```
 :::
 
@@ -97,9 +97,9 @@ pip install --upgrade git+https://github.com/SK-415/HarukaBot.git@dev
 
 ```sh
 #master
-poetry add git+https://github.com/SK-415/HarukaBot.git#master
+poetry add git+https://github.com/Akiyy-dev/nonebot-plugin-bililive.git#master
 #dev
-poetry add git+https://github.com/SK-415/HarukaBot.git#dev
+poetry add git+https://github.com/Akiyy-dev/nonebot-plugin-bililive.git#dev
 ```
 :::
 ::::
@@ -107,17 +107,17 @@ poetry add git+https://github.com/SK-415/HarukaBot.git#dev
 运行
 
 ```sh
-hb run
+bililive run
 ```
 
 ##  手动安装（不推荐）
 
 > 由于历史原因遗留的方法，不再提供支持，非常不推荐使用。
 
-1. 克隆或下载 HarukaBot 源码到本地。
+1. 克隆或下载 BiliLive 源码到本地。
 
     ```sh
-    git clone https://github.com/SK-415/HarukaBot.git
+    git clone https://github.com/Akiyy-dev/nonebot-plugin-bililive.git
     ```
 
 2. 安装依赖。
@@ -126,7 +126,7 @@ hb run
     poetry install --no-dev
     ```
 
-3. 启动 HarukaBot
+3. 启动 BiliLive
 
     ```sh
     python bot.py

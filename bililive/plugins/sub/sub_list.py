@@ -32,7 +32,7 @@ async def _(event: MessageEvent, bot: Bot):
                 {
                     "type": "node",
                     "data": {
-                        "name": "HarukaBot",
+                        "name": "BiliLive",
                         "uin": bot.self_id,
                         "content": message,
                     },

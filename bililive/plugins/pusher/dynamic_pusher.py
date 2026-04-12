@@ -40,8 +40,8 @@ async def dy_sched():
         dynamics = (
             await grpc_get_user_dynamics(
                 uid,
-                timeout=plugin_config.haruka_dynamic_timeout,
-                proxy=plugin_config.haruka_proxy,
+                timeout=plugin_config.bililive_dynamic_timeout,
+                proxy=plugin_config.bililive_proxy,
             )
         ).list
     except AioRpcError as e:
@@ -118,7 +118,7 @@ async def dy_sched():
                     send_type=sets.type,
                     type_id=sets.type_id,
                     message=message,
-                    at=bool(sets.at) and plugin_config.haruka_dynamic_at,
+                    at=bool(sets.at) and plugin_config.bililive_dynamic_at,
                 )
 
             offset[uid] = dynamic_id
@@ -137,7 +137,7 @@ def dynamic_lisener(event):
         )
 
 
-if plugin_config.haruka_dynamic_interval == 0:
+if plugin_config.bililive_dynamic_interval == 0:
     scheduler.add_listener(
         dynamic_lisener,
         EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED | EVENT_SCHEDULER_STARTED,
@@ -146,6 +146,6 @@ else:
     scheduler.add_job(
         dy_sched,
         "interval",
-        seconds=plugin_config.haruka_dynamic_interval,
+        seconds=plugin_config.bililive_dynamic_interval,
         id="dynamic_sched",
     )

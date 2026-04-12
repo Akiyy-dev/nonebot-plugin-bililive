@@ -36,6 +36,6 @@ async def _(event: GroupMessageEvent, uid: str = ArgPlainText("uid")):
         name = await db.get_name(uid) or "该UP主"
         await at_off.finish(
             f"已关闭 {name}（{uid}）"
-            f"{'直播推送' if not plugin_config.haruka_dynamic_at else ''}的@全体"
+            f"{'直播推送' if not plugin_config.bililive_dynamic_at else ''}的@全体"
         )
     await at_off.finish(f"UID（{uid}）未关注，请先关注后再操作")
