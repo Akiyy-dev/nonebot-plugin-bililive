@@ -37,7 +37,7 @@ class DB:
             },
         }
 
-        await Tortoise.init(config)
+        await Tortoise.init(config, _enable_global_fallback=True)
 
         await Tortoise.generate_schemas()
         await cls.migrate()

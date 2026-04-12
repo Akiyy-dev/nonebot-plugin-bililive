@@ -27,8 +27,10 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     compat = import_module("bililive.compat")
     Config = import_module("bililive.config").Config
     core_version = import_module("bililive.version")
+    db_module = import_module("bililive.database.db")
+    web_dynamic = import_module("bililive.libs.dynamic.web")
     plugin_entry = import_module("nonebot_plugin_bililive")
-    DB = import_module("bililive.database.db").DB
+    DB = db_module.DB
     models = import_module("bililive.database.models")
     Group = models.Group
 
@@ -88,7 +90,65 @@ class PluginEntryTests(unittest.TestCase):
         self.assertEqual(plugin_entry.__version__, core_version.__version__)
 
 
+class WebDynamicTests(unittest.TestCase):
+    def test_parse_web_dynamic_items_extracts_required_fields(self):
+        payload = {
+            "data": {
+                "items": [
+                    {
+                        "id_str": "1190297023030493193",
+                        "type": "DYNAMIC_TYPE_DRAW",
+                        "modules": {
+                            "module_author": {"name": "玻啵莉Polly"},
+                        },
+                    }
+                ]
+            }
+        }
+
+        items = web_dynamic.parse_web_dynamic_items(payload)
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].dynamic_id, 1190297023030493193)
+        self.assertEqual(items[0].dynamic_type, "DYNAMIC_TYPE_DRAW")
+        self.assertEqual(items[0].author_name, "玻啵莉Polly")
+
+    def test_parse_web_dynamic_items_skips_invalid_items(self):
+        payload = {
+            "data": {
+                "items": [
+                    {"id_str": "bad", "type": "DYNAMIC_TYPE_DRAW", "modules": {}},
+                    {
+                        "id_str": "1190297023030493193",
+                        "type": "DYNAMIC_TYPE_DRAW",
+                        "modules": {"module_author": {}},
+                    },
+                ]
+            }
+        }
+
+        self.assertEqual(web_dynamic.parse_web_dynamic_items(payload), [])
+
+
 class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_db_init_enables_global_fallback(self):
+        with (
+            patch.object(db_module.Tortoise, "init", new=AsyncMock()) as init_db,
+            patch.object(
+                db_module.Tortoise,
+                "generate_schemas",
+                new=AsyncMock(),
+            ) as generate_schemas,
+            patch.object(DB, "migrate", new=AsyncMock()) as migrate,
+            patch.object(DB, "update_uid_list", new=AsyncMock()) as update_uid_list,
+        ):
+            await DB.init()
+
+        self.assertTrue(init_db.await_args.kwargs["_enable_global_fallback"])
+        generate_schemas.assert_awaited_once()
+        migrate.assert_awaited_once()
+        update_uid_list.assert_awaited_once()
+
     async def test_set_permission_creates_group_when_missing(self):
         with (
             patch.object(DB, "get_group", new=AsyncMock(return_value=None)),

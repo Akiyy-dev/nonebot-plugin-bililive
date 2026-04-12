@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from time import monotonic
 
 from apscheduler.events import (
     EVENT_JOB_ERROR,
@@ -18,25 +19,100 @@ from nonebot.log import logger
 from ...config import plugin_config
 from ...database import DB as db
 from ...database import dynamic_offset as offset
-from ...utils import get_dynamic_screenshot, safe_send, scheduler
+from ...libs.dynamic.web import WebDynamicError, get_user_dynamics_web
+from ...utils import (
+    get_bilibili_cookies,
+    get_dynamic_screenshot,
+    safe_send,
+    scheduler,
+)
+
+RISK_CONTROL_RETRY_SECONDS = 3600
+dynamic_risk_control_until = {}
+dynamic_web_fallback_until = {}
+WEB_SKIP_DYNAMIC_TYPES = {
+    "DYNAMIC_TYPE_LIVE_RCMD",
+    "DYNAMIC_TYPE_LIVE",
+    "DYNAMIC_TYPE_AD",
+    "DYNAMIC_TYPE_BANNER",
+}
+WEB_DYNAMIC_TYPE_MESSAGES = {
+    "DYNAMIC_TYPE_FORWARD": "转发了一条动态",
+    "DYNAMIC_TYPE_WORD": "发布了新文字动态",
+    "DYNAMIC_TYPE_DRAW": "发布了新图文动态",
+    "DYNAMIC_TYPE_AV": "发布了新投稿",
+    "DYNAMIC_TYPE_ARTICLE": "发布了新专栏",
+    "DYNAMIC_TYPE_MUSIC": "发布了新音频",
+}
 
 
-async def dy_sched():
-    """动态推送"""
-    uid = await db.next_uid("dynamic")
-    if not uid:
-        # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高
+async def throttle_dynamic_loop():
+    if plugin_config.bililive_dynamic_interval == 0:
         await asyncio.sleep(1)
-        return
-    user = await db.get_user(uid=uid)
-    if user is None:
-        logger.warning(f"动态推送跳过异常订阅 UID：{uid}")
-        return
-    name = user.name
 
-    logger.debug(f"爬取动态 {name}（{uid}）")
+
+def get_dynamic_id(dynamic, use_web_fallback: bool) -> int:
+    if use_web_fallback:
+        return dynamic.dynamic_id
+    return int(dynamic.extend.dyn_id_str)
+
+
+def get_dynamic_type(dynamic, use_web_fallback: bool):
+    if use_web_fallback:
+        return dynamic.dynamic_type
+    return dynamic.card_type
+
+
+def get_dynamic_author_name(dynamic, use_web_fallback: bool) -> str:
+    if use_web_fallback:
+        return dynamic.author_name
+    return dynamic.modules[0].module_author.author.name
+
+
+def get_dynamic_type_message(dynamic_type, use_web_fallback: bool) -> str:
+    if use_web_fallback:
+        return WEB_DYNAMIC_TYPE_MESSAGES.get(dynamic_type, "发布了新动态")
+    return {
+        0: "发布了新动态",
+        DynamicType.forward: "转发了一条动态",
+        DynamicType.word: "发布了新文字动态",
+        DynamicType.draw: "发布了新图文动态",
+        DynamicType.av: "发布了新投稿",
+        DynamicType.article: "发布了新专栏",
+        DynamicType.music: "发布了新音频",
+    }.get(dynamic_type, "发布了新动态")
+
+
+def should_skip_dynamic(dynamic_type, use_web_fallback: bool) -> bool:
+    if use_web_fallback:
+        return dynamic_type in WEB_SKIP_DYNAMIC_TYPES
+    return dynamic_type in [
+        DynamicType.live_rcmd,
+        DynamicType.live,
+        DynamicType.ad,
+        DynamicType.banner,
+    ]
+
+
+async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
+    fallback_until = dynamic_web_fallback_until.get(uid)
+    if fallback_until is not None:
+        if fallback_until > monotonic():
+            logger.debug(f"动态 gRPC 接口仍在风控，继续使用 Web 接口：{uid}")
+            cookies = await get_bilibili_cookies()
+            if not cookies:
+                raise WebDynamicError(-1, "browser cookies unavailable")
+            dynamics = await get_user_dynamics_web(
+                uid,
+                cookies,
+                proxy=plugin_config.bililive_proxy,
+                user_agent=plugin_config.bililive_browser_ua or None,
+                timeout=plugin_config.bililive_dynamic_timeout,
+            )
+            return dynamics, True
+        del dynamic_web_fallback_until[uid]
+
     try:
-        # 获取 UP 最新动态列表
         dynamics = (
             await grpc_get_user_dynamics(
                 uid,
@@ -44,40 +120,106 @@ async def dy_sched():
                 proxy=plugin_config.bililive_proxy,
             )
         ).list
+        dynamic_web_fallback_until.pop(uid, None)
+        return list(dynamics), False
+    except GrpcError as e:
+        if e.code != -352:
+            raise
+        logger.warning(
+            f"动态 gRPC 接口触发风控，切换 Web 接口：{uid} "
+            f"{e.code} {e.msg}"
+        )
+        dynamic_web_fallback_until[uid] = monotonic() + RISK_CONTROL_RETRY_SECONDS
+    cookies = await get_bilibili_cookies()
+    if not cookies:
+        raise WebDynamicError(-1, "browser cookies unavailable")
+    dynamics = await get_user_dynamics_web(
+        uid,
+        cookies,
+        proxy=plugin_config.bililive_proxy,
+        user_agent=plugin_config.bililive_browser_ua or None,
+        timeout=plugin_config.bililive_dynamic_timeout,
+    )
+    return dynamics, True
+
+
+async def dy_sched():
+    """动态推送"""
+    uid = await db.next_uid("dynamic")
+    if not uid:
+        # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高
+        await throttle_dynamic_loop()
+        return
+    user = await db.get_user(uid=uid)
+    if user is None:
+        logger.warning(f"动态推送跳过异常订阅 UID：{uid}")
+        await throttle_dynamic_loop()
+        return
+    name = user.name
+
+    retry_at = dynamic_risk_control_until.get(uid)
+    if retry_at is not None:
+        if retry_at > monotonic():
+            logger.debug(f"动态接口风控冷却中，跳过 {name}（{uid}）")
+            await throttle_dynamic_loop()
+            return
+        del dynamic_risk_control_until[uid]
+
+    logger.debug(f"爬取动态 {name}（{uid}）")
+    use_web_fallback = False
+    try:
+        dynamics, use_web_fallback = await get_user_dynamics_with_web_fallback(uid)
+    except asyncio.CancelledError:
+        logger.debug(f"动态轮询任务已取消：{name}（{uid}）")
+        return
     except AioRpcError as e:
         if e.code() == StatusCode.DEADLINE_EXCEEDED:
             logger.error(f"爬取动态超时，将在下个轮询中重试：{e.code()} {e.details()}")
         else:
             logger.error(f"爬取动态失败：{e.code()} {e.details()}")
+        await throttle_dynamic_loop()
         return
     except GrpcError as e:
         logger.error(f"爬取动态失败：{e.code} {e.msg}")
+        await throttle_dynamic_loop()
         return
+    except WebDynamicError as e:
+        dynamic_risk_control_until[uid] = monotonic() + RISK_CONTROL_RETRY_SECONDS
+        retry_minutes = RISK_CONTROL_RETRY_SECONDS // 60
+        logger.warning(
+            f"动态 Web 接口获取失败，{name}（{uid}）将在 "
+            f"{retry_minutes} 分钟后重试：{e.code} {e.msg}"
+        )
+        await throttle_dynamic_loop()
+        return
+
+    dynamic_risk_control_until.pop(uid, None)
 
     if not dynamics:  # 没发过动态
         if uid in offset and offset[uid] == -1:  # 不记录会导致第一次发动态不推送
             offset[uid] = 0
         return
-    # 更新昵称
-    name = dynamics[0].modules[0].module_author.author.name
+    name = get_dynamic_author_name(dynamics[0], use_web_fallback)
 
     if uid not in offset:  # 已删除
         return
     elif offset[uid] == -1:  # 第一次爬取
         if len(dynamics) == 1:  # 只有一条动态
-            offset[uid] = int(dynamics[0].extend.dyn_id_str)
+            offset[uid] = get_dynamic_id(dynamics[0], use_web_fallback)
         else:  # 第一个可能是置顶动态，但置顶也可能是最新一条，所以取前两条的最大值
             offset[uid] = max(
-                int(dynamics[0].extend.dyn_id_str), int(dynamics[1].extend.dyn_id_str)
+                get_dynamic_id(dynamics[0], use_web_fallback),
+                get_dynamic_id(dynamics[1], use_web_fallback),
             )
         return
 
     dynamic = None
     for dynamic in sorted(
         dynamics,
-        key=lambda x: int(x.extend.dyn_id_str),  # 动态从旧到新排列
+        key=lambda x: get_dynamic_id(x, use_web_fallback),  # 动态从旧到新排列
     ):
-        dynamic_id = int(dynamic.extend.dyn_id_str)
+        dynamic_id = get_dynamic_id(dynamic, use_web_fallback)
+        dynamic_type = get_dynamic_type(dynamic, use_web_fallback)
         if dynamic_id > offset[uid]:
             logger.info(f"检测到新动态（{dynamic_id}）：{name}（{uid}）")
             image, err = await get_dynamic_screenshot(dynamic_id)
@@ -85,27 +227,12 @@ async def dy_sched():
             if image is None:
                 logger.debug(f"动态不存在，已跳过：{url}")
                 return
-            elif dynamic.card_type in [
-                DynamicType.live_rcmd,
-                DynamicType.live,
-                DynamicType.ad,
-                DynamicType.banner,
-            ]:
-                logger.debug(f"无需推送的动态 {dynamic.card_type}，已跳过：{url}")
+            elif should_skip_dynamic(dynamic_type, use_web_fallback):
+                logger.debug(f"无需推送的动态 {dynamic_type}，已跳过：{url}")
                 offset[uid] = dynamic_id
                 return
-
-            type_msg = {
-                0: "发布了新动态",
-                DynamicType.forward: "转发了一条动态",
-                DynamicType.word: "发布了新文字动态",
-                DynamicType.draw: "发布了新图文动态",
-                DynamicType.av: "发布了新投稿",
-                DynamicType.article: "发布了新专栏",
-                DynamicType.music: "发布了新音频",
-            }
             message = (
-                f"{name} {type_msg.get(dynamic.card_type, type_msg[0])}：\n"
+                f"{name} {get_dynamic_type_message(dynamic_type, use_web_fallback)}：\n"
                 + str(f"动态图片可能截图异常：{err}\n" if err else "")
                 + MessageSegment.image(image)
                 + f"\n{url}"

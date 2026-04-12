@@ -13,7 +13,12 @@ live_time = {}
 
 
 @scheduler.scheduled_job(
-    "interval", seconds=plugin_config.bililive_live_interval, id="live_sched"
+    "interval",
+    seconds=plugin_config.bililive_live_interval,
+    id="live_sched",
+    coalesce=True,
+    max_instances=1,
+    misfire_grace_time=5,
 )
 async def live_sched():
     # sourcery skip: use-fstring-for-concatenation
