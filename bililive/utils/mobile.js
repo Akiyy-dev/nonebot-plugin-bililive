@@ -183,13 +183,13 @@ function setFont(font = "", fontSource = "local") {
     // 将字体样式设置到 div#app 上
     const appDom = document.querySelector("#app");
     const emojiFont = emojiFontList.join(",");
+    const fallbackFonts = needLoadFontList.map(fontObject => fontObject.fontFamily).join(",");
     if (appDom) {
         // 动态加字体, 并给与默认值 sans-serif
         if (fontSource === "system") {
-            appDom.style.fontFamily = font + "," + emojiFont + ",sans-serif";
+            appDom.style.fontFamily = [font, fallbackFonts, emojiFont, "sans-serif"].filter(Boolean).join(",");
         } else {
-            const needLoadFont = needLoadFontList.reduce((defaultString, fontObject) => defaultString + fontObject.fontFamily + ",", "");
-            appDom.style.fontFamily = needLoadFont + emojiFont + ",sans-serif";
+            appDom.style.fontFamily = [fallbackFonts, emojiFont, "sans-serif"].filter(Boolean).join(",");
         };
         appDom.style.overflowWrap = "break-word";
     }
