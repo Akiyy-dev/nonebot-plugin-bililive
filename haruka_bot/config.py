@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from loguru import logger
 from nonebot import get_driver
@@ -27,8 +27,6 @@ class Config(BaseModel):
     haruka_dynamic_font: Optional[str] = "Noto Sans CJK SC"
     haruka_dynamic_big_image: bool = False
     haruka_command_prefix: str = ""
-    # 频道管理员身份组
-    haruka_guild_admin_roles: List[str] = ["频道主", "超级管理员"]
 
     @field_validator(
         "haruka_interval", "haruka_live_interval", "haruka_dynamic_interval"

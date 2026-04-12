@@ -2,7 +2,6 @@ from bilireq.exceptions import ResponseCodeError
 from bilireq.user import get_user_info
 from nonebot.adapters.onebot.v11.event import MessageEvent
 from nonebot.params import ArgPlainText
-from nonebot_plugin_guild_patch import GuildMessageEvent
 
 from ...database import DB as db
 from ...utils import (
@@ -44,10 +43,6 @@ async def _(event: MessageEvent, uid: str = ArgPlainText("uid")):
                                     {str(e)}"
                 )
 
-    if isinstance(event, GuildMessageEvent):
-        await db.add_guild(
-            guild_id=event.guild_id, channel_id=event.channel_id, admin=True
-        )
     result = await db.add_sub(
         uid=uid,
         type=event.message_type,

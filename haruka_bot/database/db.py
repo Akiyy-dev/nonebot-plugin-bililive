@@ -10,7 +10,7 @@ from tortoise.connection import connections
 
 from ..utils import get_path
 from ..version import VERSION as HBVERSION
-from .models import Group, Guild, Sub, User, Version
+from .models import Group, Sub, User, Version
 
 uid_list = {"live": {"list": [], "index": 0}, "dynamic": {"list": [], "index": 0}}
 dynamic_offset = {}
@@ -98,32 +98,9 @@ class DB:
         return bool(group.admin)
 
     @classmethod
-    async def get_guild_admin(cls, guild_id, channel_id) -> bool:
-        """获取指定频道权限状态"""
-        guild = await cls.get_guild(guild_id=guild_id, channel_id=channel_id)
-        if not guild:
-            # TODO 自定义默认状态
-            return True
-        return bool(guild.admin)
-
-    @classmethod
     async def add_group(cls, **kwargs):
         """创建群设置"""
         return await Group.add(**kwargs)
-
-    @classmethod
-    async def add_guild(cls, **kwargs):
-        """创建频道设置"""
-        return await Guild.add(**kwargs)
-
-    @classmethod
-    async def delete_guild(cls, id) -> bool:
-        """删除子频道设置"""
-        if await cls.get_sub(type="guild", type_id=id):
-            # 当前频道还有订阅，不能删除
-            return False
-        await Guild.delete(id=id)
-        return True
 
     @classmethod
     async def delete_group(cls, id) -> bool:
@@ -145,29 +122,6 @@ class DB:
             return False
         await Group.update({"id": id}, admin=switch)
         return True
-
-    @classmethod
-    async def set_guild_permission(cls, guild_id, channel_id, switch) -> bool:
-        """设置指定频道权限"""
-        guild = await cls.get_guild(guild_id=guild_id, channel_id=channel_id)
-        if not guild:
-            await cls.add_guild(guild_id=guild_id, channel_id=channel_id, admin=switch)
-            return True
-        if bool(guild.admin) == switch:
-            return False
-        await Guild.update({"guild_id": guild_id, "channel_id": channel_id}, admin=switch)
-        return True
-
-    @classmethod
-    async def get_guild(cls, **kwargs):
-        """获取频道设置"""
-        return await Guild.get(**kwargs).first()
-
-    @classmethod
-    async def get_guild_type_id(cls, guild_id, channel_id) -> Optional[int]:
-        """获取频道订阅 ID"""
-        guild = await Guild.get(guild_id=guild_id, channel_id=channel_id).first()
-        return guild.id if guild else None
 
     @classmethod
     async def get_sub(cls, **kwargs):

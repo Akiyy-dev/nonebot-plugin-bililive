@@ -30,7 +30,6 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     DB = import_module("haruka_bot.database.db").DB
     models = import_module("haruka_bot.database.models")
     Group = models.Group
-    Guild = models.Guild
 
 
 class ConfigTests(unittest.TestCase):
@@ -92,28 +91,6 @@ class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
             Group, "update", new=AsyncMock()
         ) as update:
             changed = await DB.set_permission(123, False)
-
-        self.assertFalse(changed)
-        update.assert_not_awaited()
-
-    async def test_set_guild_permission_creates_record_when_missing(self):
-        with patch.object(DB, "get_guild", new=AsyncMock(return_value=None)), patch.object(
-            DB, "add_guild", new=AsyncMock(return_value=True)
-        ) as add_guild, patch.object(Guild, "update", new=AsyncMock()) as update:
-            changed = await DB.set_guild_permission("guild", "channel", False)
-
-        self.assertTrue(changed)
-        add_guild.assert_awaited_once_with(
-            guild_id="guild", channel_id="channel", admin=False
-        )
-        update.assert_not_awaited()
-
-    async def test_set_guild_permission_is_noop_when_state_matches(self):
-        guild = SimpleNamespace(admin=True)
-        with patch.object(DB, "get_guild", new=AsyncMock(return_value=guild)), patch.object(
-            Guild, "update", new=AsyncMock()
-        ) as update:
-            changed = await DB.set_guild_permission("guild", "channel", True)
 
         self.assertFalse(changed)
         update.assert_not_awaited()

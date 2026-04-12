@@ -1,15 +1,11 @@
-from typing import Union
-
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from nonebot.adapters.onebot.v11.permission import GROUP_ADMIN, GROUP_OWNER
 from nonebot.params import ArgPlainText
 from nonebot.permission import SUPERUSER
-from nonebot_plugin_guild_patch import GuildMessageEvent
 
 from ...config import plugin_config
 from ...database import DB as db
 from ...utils import (
-    GUILD_ADMIN,
     get_type_id,
     group_only,
     handle_uid,
@@ -21,7 +17,7 @@ from ...utils import (
 at_off = on_command(
     "关闭全体",
     rule=to_me(),
-    permission=GROUP_OWNER | GROUP_ADMIN | SUPERUSER | GUILD_ADMIN,
+    permission=GROUP_OWNER | GROUP_ADMIN | SUPERUSER,
     priority=5,
 )
 at_off.__doc__ = """关闭全体 UID"""
@@ -32,9 +28,7 @@ at_off.got("uid", prompt="请输入要关闭全体的UID")(uid_check)
 
 
 @at_off.handle()
-async def _(
-    event: Union[GroupMessageEvent, GuildMessageEvent], uid: str = ArgPlainText("uid")
-):
+async def _(event: GroupMessageEvent, uid: str = ArgPlainText("uid")):
     """根据 UID 关闭全体"""
     if await db.set_sub(
         "at", False, uid=uid, type=event.message_type, type_id=await get_type_id(event)

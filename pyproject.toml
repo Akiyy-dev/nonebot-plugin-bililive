@@ -18,7 +18,6 @@ dependencies = [
     "tortoise-orm[asyncpg]>=0.19.3",
     "bilireq>=0.2.13",
     "packaging>=26.0",
-    "nonebot-plugin-guild-patch-remix>=0.2.4",
     "msvc-runtime>=14.34.31931; sys_platform == \"win32\"",
 ]
 dynamic = ["version"]
@@ -32,16 +31,11 @@ homepage = "https://github.com/SK-415/HarukaBot"
 repository = "https://github.com/SK-415/HarukaBot/tree/master/src/plugins/haruka_bot"
 documentation = "https://github.com/SK-415/HarukaBot#readme"
 
-[tool.pdm.dev-dependencies]
-dev = [
-    "nonebot-plugin-gocqhttp>=0.6.10",
-]
-
 [tool.nonebot]
 adapters = [
     { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
 ]
-plugins = ["haruka_bot", "nonebot_plugin_gocqhttp", "nonebot_plugin_guild_patch"]
+plugins = ["haruka_bot"]
 plugin_dirs = []
 builtin_plugins = []
 

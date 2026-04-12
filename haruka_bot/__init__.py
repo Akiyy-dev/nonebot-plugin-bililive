@@ -19,7 +19,7 @@ __plugin_meta__ = PluginMetadata(
     usage="https://haruka-bot.sk415.icu/",
     homepage="https://github.com/SK-415/HarukaBot",
     type="application",
-    supported_adapters={"~onebot.v11", "~qqguild"},
+    supported_adapters={"~onebot.v11"},
     extra={
         "author": "SK-415",
         "version": __version__,
