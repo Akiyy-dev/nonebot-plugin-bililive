@@ -1,5 +1,11 @@
 <div align="center">
+  <a href="https://v2.nonebot.dev/store"><img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/nbp_logo.png" width="180" height="180" alt="NoneBotPluginLogo"></a>
+  <br>
+  <p><img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/NoneBotPlugin.svg" width="240" alt="NoneBotPluginText"></p>
+</div>
 
+<div align="center">
+	
 # nonebot-plugin-bililive
 
 _✨ 将 B 站 UP 主动态与直播推送到 QQ 的 NoneBot2 插件 ✨_
