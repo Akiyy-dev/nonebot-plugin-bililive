@@ -29,6 +29,7 @@ from ...utils import (
 
 RISK_CONTROL_RETRY_SECONDS = 3600
 dynamic_risk_control_until = {}
+dynamic_web_fallback_until = {}
 WEB_SKIP_DYNAMIC_TYPES = {
     "DYNAMIC_TYPE_LIVE_RCMD",
     "DYNAMIC_TYPE_LIVE",
@@ -94,6 +95,23 @@ def should_skip_dynamic(dynamic_type, use_web_fallback: bool) -> bool:
 
 
 async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
+    fallback_until = dynamic_web_fallback_until.get(uid)
+    if fallback_until is not None:
+        if fallback_until > monotonic():
+            logger.debug(f"动态 gRPC 接口仍在风控，继续使用 Web 接口：{uid}")
+            cookies = await get_bilibili_cookies()
+            if not cookies:
+                raise WebDynamicError(-1, "browser cookies unavailable")
+            dynamics = await get_user_dynamics_web(
+                uid,
+                cookies,
+                proxy=plugin_config.bililive_proxy,
+                user_agent=plugin_config.bililive_browser_ua or None,
+                timeout=plugin_config.bililive_dynamic_timeout,
+            )
+            return dynamics, True
+        del dynamic_web_fallback_until[uid]
+
     try:
         dynamics = (
             await grpc_get_user_dynamics(
@@ -102,11 +120,16 @@ async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
                 proxy=plugin_config.bililive_proxy,
             )
         ).list
+        dynamic_web_fallback_until.pop(uid, None)
         return list(dynamics), False
     except GrpcError as e:
         if e.code != -352:
             raise
-        logger.warning(f"动态 gRPC 接口触发风控，切换 Web 接口：{uid} {e.code} {e.msg}")
+        logger.warning(
+            f"动态 gRPC 接口触发风控，切换 Web 接口：{uid} "
+            f"{e.code} {e.msg}"
+        )
+        dynamic_web_fallback_until[uid] = monotonic() + RISK_CONTROL_RETRY_SECONDS
     cookies = await get_bilibili_cookies()
     if not cookies:
         raise WebDynamicError(-1, "browser cookies unavailable")
@@ -146,6 +169,9 @@ async def dy_sched():
     use_web_fallback = False
     try:
         dynamics, use_web_fallback = await get_user_dynamics_with_web_fallback(uid)
+    except asyncio.CancelledError:
+        logger.debug(f"动态轮询任务已取消：{name}（{uid}）")
+        return
     except AioRpcError as e:
         if e.code() == StatusCode.DEADLINE_EXCEEDED:
             logger.error(f"爬取动态超时，将在下个轮询中重试：{e.code()} {e.details()}")
