@@ -63,6 +63,15 @@ async def get_browser() -> BrowserContext:
     return _browser
 
 
+async def get_bilibili_cookies() -> dict[str, str]:
+    browser = await get_browser()
+    cookies = await browser.cookies([
+        "https://www.bilibili.com/",
+        "https://api.bilibili.com/",
+    ])
+    return {cookie["name"]: cookie["value"] for cookie in cookies}
+
+
 async def get_dynamic_screenshot(
     dynamic_id,
     style=plugin_config.bililive_screenshot_style,

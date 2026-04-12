@@ -28,6 +28,7 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     Config = import_module("bililive.config").Config
     core_version = import_module("bililive.version")
     db_module = import_module("bililive.database.db")
+    web_dynamic = import_module("bililive.libs.dynamic.web")
     plugin_entry = import_module("nonebot_plugin_bililive")
     DB = db_module.DB
     models = import_module("bililive.database.models")
@@ -87,6 +88,46 @@ class PluginEntryTests(unittest.TestCase):
         )
         self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
         self.assertEqual(plugin_entry.__version__, core_version.__version__)
+
+
+class WebDynamicTests(unittest.TestCase):
+    def test_parse_web_dynamic_items_extracts_required_fields(self):
+        payload = {
+            "data": {
+                "items": [
+                    {
+                        "id_str": "1190297023030493193",
+                        "type": "DYNAMIC_TYPE_DRAW",
+                        "modules": {
+                            "module_author": {"name": "玻啵莉Polly"},
+                        },
+                    }
+                ]
+            }
+        }
+
+        items = web_dynamic.parse_web_dynamic_items(payload)
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].dynamic_id, 1190297023030493193)
+        self.assertEqual(items[0].dynamic_type, "DYNAMIC_TYPE_DRAW")
+        self.assertEqual(items[0].author_name, "玻啵莉Polly")
+
+    def test_parse_web_dynamic_items_skips_invalid_items(self):
+        payload = {
+            "data": {
+                "items": [
+                    {"id_str": "bad", "type": "DYNAMIC_TYPE_DRAW", "modules": {}},
+                    {
+                        "id_str": "1190297023030493193",
+                        "type": "DYNAMIC_TYPE_DRAW",
+                        "modules": {"module_author": {}},
+                    },
+                ]
+            }
+        }
+
+        self.assertEqual(web_dynamic.parse_web_dynamic_items(payload), [])
 
 
 class DBPermissionTests(unittest.IsolatedAsyncioTestCase):

@@ -304,4 +304,4 @@ PROXIES = {"all://": plugin_config.bililive_proxy}
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler  # noqa
 
-from .browser import get_dynamic_screenshot  # noqa
+from .browser import get_bilibili_cookies, get_dynamic_screenshot  # noqa

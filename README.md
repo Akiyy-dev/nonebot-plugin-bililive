@@ -78,6 +78,8 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 | BILILIVE_DYNAMIC_BIG_IMAGE | 否 | false | 是否优先展示大图 |
 | BILILIVE_COMMAND_PREFIX | 否 | 空字符串 | 命令额外前缀 |
 
+动态抓取默认优先使用 gRPC 接口；当部分 UID 命中 B 站风控时，插件会自动回退到 Playwright 持久化浏览器中的 cookies 请求网页动态接口。通常不需要额外配置 Cookie 登录；如果某些 UID 仍持续抓取失败，建议在插件使用的浏览器数据目录中登录一个常用的 B 站账号，以提高动态抓取成功率。
+
 ## 🎉 使用
 
 ### 指令表
