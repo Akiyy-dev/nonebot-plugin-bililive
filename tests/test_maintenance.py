@@ -26,6 +26,7 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
 ), patch.dict(sys.modules, {"nonebot_plugin_apscheduler": fake_apscheduler}):
     compat = import_module("bililive.compat")
     Config = import_module("bililive.config").Config
+    core_version = import_module("bililive.version")
     plugin_entry = import_module("nonebot_plugin_bililive")
     DB = import_module("bililive.database.db").DB
     models = import_module("bililive.database.models")
@@ -84,7 +85,7 @@ class PluginEntryTests(unittest.TestCase):
             "https://github.com/Akiyy-dev/nonebot-plugin-bililive",
         )
         self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
-        self.assertEqual(plugin_entry.__version__, "1.6.0post5")
+        self.assertEqual(plugin_entry.__version__, core_version.__version__)
 
 
 class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
