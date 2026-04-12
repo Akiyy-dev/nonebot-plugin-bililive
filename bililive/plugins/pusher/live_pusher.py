@@ -23,6 +23,10 @@ live_time = {}
 async def live_sched():
     # sourcery skip: use-fstring-for-concatenation
     """直播推送"""
+    if not await db.wait_until_ready():
+        logger.debug("数据库尚未初始化完成，跳过本轮直播推送")
+        return
+
     uids = await db.get_uid_list("live")
 
     if not uids:  # 订阅为空
