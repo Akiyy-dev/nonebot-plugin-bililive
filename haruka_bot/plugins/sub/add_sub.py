@@ -7,6 +7,7 @@ from ...database import DB as db
 from ...utils import (
     PROXIES,
     get_type_id,
+    get_user_name_by_uid,
     handle_uid,
     on_command,
     permission_check,
@@ -33,7 +34,13 @@ async def _(event: MessageEvent, uid: str = ArgPlainText("uid")):
         try:
             name = (await get_user_info(uid, reqtype="web", proxies=PROXIES))["name"]
         except ResponseCodeError as e:
-            if e.code in [-400, -404]:
+            name = await get_user_name_by_uid(uid)
+            if name:
+                logger_message = f"UID {uid} 使用 card 接口回退获取昵称成功"
+                from nonebot.log import logger
+
+                logger.warning(logger_message)
+            elif e.code in [-400, -404]:
                 await add_sub.finish("UID不存在，注意UID不是房间号")
             elif e.code == -412:
                 await add_sub.finish("操作过于频繁IP暂时被风控，请半小时后再尝试")
@@ -42,6 +49,10 @@ async def _(event: MessageEvent, uid: str = ArgPlainText("uid")):
                     f"未知错误，请联系开发者反馈，错误内容：\n\
                                     {str(e)}"
                 )
+        except Exception:
+            name = await get_user_name_by_uid(uid)
+            if not name:
+                raise
 
     result = await db.add_sub(
         uid=uid,

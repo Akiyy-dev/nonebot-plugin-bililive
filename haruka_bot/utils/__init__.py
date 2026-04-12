@@ -93,6 +93,26 @@ async def search_user(keyword: str):
     return resp
 
 
+async def get_user_name_by_uid(uid: Union[int, str]) -> Union[str, None]:
+    """通过较稳定的 card 接口获取用户昵称"""
+    url = "https://api.bilibili.com/x/web-interface/card"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.bilibili.com/",
+    }
+    async with httpx.AsyncClient(
+        proxy=plugin_config.haruka_proxy,
+        headers=headers,
+        timeout=20,
+        follow_redirects=True,
+    ) as client:
+        resp = await client.get(url, params={"mid": uid})
+    data = resp.json()
+    if data.get("code") != 0:
+        return None
+    return data.get("data", {}).get("card", {}).get("name")
+
+
 async def uid_extract(text: str):
     logger.debug(f"[UID Extract] Original Text: {text}")
     b23_msg = await b23_extract(text) if "b23.tv" in text else None
