@@ -22,7 +22,7 @@ _✨ 将 B 站 UP 主动态与直播推送到 QQ 的 NoneBot2 插件 ✨_
 
 ## 📖 介绍
 
-BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直播与动态消息推送到 QQ 群或私聊场景。当前项目已将发布名、插件入口、核心实现包和工作流统一整理为 nonebot-plugin-bililive，便于作为独立插件分发。
+BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直播与动态消息推送到 QQ 群或私聊场景。
 
 ### 特性
 
