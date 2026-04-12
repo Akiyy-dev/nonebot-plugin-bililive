@@ -11,6 +11,7 @@ from playwright.__main__ import main
 from playwright.async_api import BrowserContext, async_playwright, Page
 
 from ..config import plugin_config
+from .captcha_solver import CaptchaInfer
 from .fonts_provider import fill_font
 from ..utils import get_path
 
@@ -116,8 +117,6 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
     await page.set_viewport_size({"width": 460, "height": 780})
     await page.route(re.compile("^https://static.graiax/fonts/(.+)$"), fill_font)
     if plugin_config.haruka_captcha_address:
-        from aunly_captcha_solver import CaptchaInfer
-
         captcha = CaptchaInfer(
             plugin_config.haruka_captcha_address, plugin_config.haruka_captcha_token
         )
