@@ -39,4 +39,4 @@ jobs:
         if: matrix.py_ver == '3.11'
         run: |
           pdm build
-          pdm run python -m twine check dist/*
+          python -m twine check dist/*
