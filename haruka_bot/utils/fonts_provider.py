@@ -1,8 +1,8 @@
+from pathlib import Path
+
+from loguru import logger
 from playwright.async_api import Request, Route
 from yarl import URL
-from loguru import logger
-
-from pathlib import Path
 
 font_path = Path("font")
 

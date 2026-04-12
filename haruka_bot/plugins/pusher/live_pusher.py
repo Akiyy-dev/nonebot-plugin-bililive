@@ -6,7 +6,7 @@ from nonebot.log import logger
 
 from ...config import plugin_config
 from ...database import DB as db
-from ...utils import PROXIES, safe_send, scheduler, calc_time_total
+from ...utils import PROXIES, calc_time_total, safe_send, scheduler
 
 status = {}
 live_time = {}

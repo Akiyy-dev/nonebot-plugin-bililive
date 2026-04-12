@@ -1,11 +1,23 @@
 [project]
-# PEP 621 project metadata
-# See https://www.python.org/dev/peps/pep-0621/
+name = "nonebot-plugin-haruka-bot"
+description = "Push bilibili dynamics and live notifications to QQ with NoneBot2."
 authors = [
     {name = "SK-415", email = "2967923486@qq.com"},
 ]
 license = {text = "AGPL-3.0-or-later"}
-requires-python = ">=3.8,<4.0"
+requires-python = ">=3.10,<4.0"
+readme = "README.md"
+keywords = ["nonebot", "nonebot2", "nonebot-plugin", "qqbot", "bilibili"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Robot Framework",
+    "Framework :: Robot Framework :: Library",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+]
 dependencies = [
     "click>=8.1.3",
     "httpx>=0.28.1,<1.0",
@@ -21,31 +33,71 @@ dependencies = [
     "msvc-runtime>=14.34.31931; sys_platform == \"win32\"",
 ]
 dynamic = ["version"]
-name = "haruka-bot"
-description = "Push dynamics and live informations from bilibili to QQ. Based on nonebot2."
-readme = "README.md"
-keywords = ["nonebot", "nonebot2", "qqbot", "bilibili", "bot"]
 
 [project.urls]
-homepage = "https://github.com/SK-415/HarukaBot"
-repository = "https://github.com/SK-415/HarukaBot/tree/master/src/plugins/haruka_bot"
-documentation = "https://github.com/SK-415/HarukaBot#readme"
+Homepage = "https://github.com/SK-415/HarukaBot"
+Repository = "https://github.com/SK-415/HarukaBot"
+Documentation = "https://haruka-bot.sk415.icu"
+Issues = "https://github.com/SK-415/HarukaBot/issues"
 
 [tool.nonebot]
 adapters = [
     { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
 ]
-plugins = ["haruka_bot"]
+plugins = ["nonebot_plugin_haruka_bot"]
 plugin_dirs = []
 builtin_plugins = []
 
 [project.scripts]
 hb = "haruka_bot.__main__:main"
 
+[tool.pdm]
+distribution = true
+
 [tool.pdm.version]
 source = "file"
 path = "haruka_bot/version.py"
 
+[tool.pdm.build]
+includes = ["haruka_bot", "nonebot_plugin_haruka_bot"]
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "black>=24.4.2",
+    "isort>=5.13.2",
+    "ruff>=0.4.6",
+]
+
+[tool.pdm.scripts]
+test = "python -m unittest tests.test_maintenance"
+format = { composite = ["isort .", "black .", "ruff check . --fix"] }
+lint = { composite = ["ruff check .", "python -m unittest tests.test_maintenance"] }
+
+[tool.black]
+line-length = 90
+target-version = ["py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 90
+length_sort = true
+skip_gitignore = true
+force_sort_within_sections = true
+extra_standard_library = ["typing_extensions"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "UP", "B", "I"]
+ignore = ["E402"]
+
+[tool.pyright]
+pythonVersion = "3.10"
+pythonPlatform = "All"
+typeCheckingMode = "basic"
+
 [build-system]
-requires = ["pdm-pep517>=1.0.0"]
-build-backend = "pdm.pep517.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

@@ -2,6 +2,7 @@
 exclude = 
     docs/,
     .github/,
+    .venv/,
     venv/,
     */_test/,
     */test/,

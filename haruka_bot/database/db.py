@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from nonebot import get_driver
 from nonebot.log import logger
@@ -54,7 +53,7 @@ class DB:
         return await User.get(**kwargs).first()
 
     @classmethod
-    async def get_name(cls, uid) -> Optional[str]:
+    async def get_name(cls, uid) -> str | None:
         """获取 UP 主昵称"""
         user = await cls.get_user(uid=uid)
         if user:
@@ -133,12 +132,12 @@ class DB:
         return await Sub.get(**kwargs)
 
     @classmethod
-    async def get_push_list(cls, uid, func) -> List[Sub]:
+    async def get_push_list(cls, uid, func) -> list[Sub]:
         """根据类型和 UID 获取需要推送的 QQ 列表"""
         return await cls.get_subs(uid=uid, **{func: True})
 
     @classmethod
-    async def get_sub_list(cls, type, type_id) -> List[Sub]:
+    async def get_sub_list(cls, type, type_id) -> list[Sub]:
         """获取指定位置的推送列表"""
         return await cls.get_subs(type=type, type_id=type_id)
 
@@ -206,8 +205,8 @@ class DB:
         logger.info("正在从 config.json 迁移数据库")
         with json_path.open("r", encoding="utf-8") as f:
             old_db = json.loads(f.read())
-        subs: Dict[int, Dict] = old_db["_default"]
-        groups: Dict[int, Dict] = old_db["groups"]
+        subs: dict[int, dict] = old_db["_default"]
+        groups: dict[int, dict] = old_db["groups"]
         for sub in subs.values():
             await cls.add_sub(
                 uid=sub["uid"],
@@ -226,7 +225,7 @@ class DB:
         logger.info("数据库迁移完成")
 
     @classmethod
-    async def get_uid_list(cls, func) -> List:
+    async def get_uid_list(cls, func) -> list:
         """根据类型获取需要爬取的 UID 列表"""
         return uid_list[func]["list"]
 

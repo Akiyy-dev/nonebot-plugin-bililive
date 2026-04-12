@@ -1,4 +1,3 @@
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -6,17 +5,17 @@ from pydantic import BaseModel
 class Info(BaseModel):
     """用户信息"""
 
-    uid: Optional[int]
-    uname: Optional[str]
-    face: Optional[str]
-    head_url: Optional[str]
-    name: Optional[str]
+    uid: int | None
+    uname: str | None
+    face: str | None
+    head_url: str | None
+    name: str | None
 
 
 class LevelInfo(BaseModel):
     """等级信息"""
 
-    current_level: Optional[int]
+    current_level: int | None
 
 
 class Pendant(BaseModel):
@@ -47,7 +46,7 @@ class VIP(BaseModel):
 
 class UserProfile(BaseModel):
     info: Info
-    level_info: Optional[LevelInfo]
-    pendant: Optional[Pendant]
-    card: Optional[Card]
-    vip: Optional[VIP]
+    level_info: LevelInfo | None
+    pendant: Pendant | None
+    card: Card | None
+    vip: VIP | None

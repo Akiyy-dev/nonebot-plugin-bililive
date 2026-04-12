@@ -1,8 +1,7 @@
-from typing import List, Optional, Union
 
 from pydantic import BaseModel, Json
 
-from .user_profile import UserProfile, Info
+from .user_profile import Info, UserProfile
 
 
 class Picture(BaseModel):
@@ -12,12 +11,12 @@ class Picture(BaseModel):
 
 
 class Item(BaseModel):
-    at_control: Optional[Union[Json, str]]
-    description: Optional[str]
-    upload_time: Optional[int]
-    content: Optional[str]
-    ctrl: Optional[Union[Json, str]]
-    pictures: Optional[Union[str, List[Picture]]]
+    at_control: Json | str | None
+    description: str | None
+    upload_time: int | None
+    content: str | None
+    ctrl: Json | str | None
+    pictures: str | list[Picture] | None
 
 
 class Vest(BaseModel):
@@ -25,30 +24,30 @@ class Vest(BaseModel):
 
 
 class APISeasonInfo(BaseModel):
-    title: Optional[str]
+    title: str | None
     type_name: str
 
 
 class Card(BaseModel):
-    item: Optional[Item]
-    dynamic: Optional[str]
-    pic: Optional[str]
-    title: Optional[str]
-    origin: Optional[Json]
-    image_urls: Optional[List]
-    summary: Optional[str]
-    vest: Optional[Vest]
-    origin_user: Optional[UserProfile]
+    item: Item | None
+    dynamic: str | None
+    pic: str | None
+    title: str | None
+    origin: Json | None
+    image_urls: list | None
+    summary: str | None
+    vest: Vest | None
+    origin_user: UserProfile | None
 
-    duration: Optional[int]
+    duration: int | None
 
-    user: Optional[Info]
-    owner: Optional[Info]
-    author: Optional[Info]
+    user: Info | None
+    owner: Info | None
+    author: Info | None
 
-    cover: Optional[str]
-    area_v2_name: Optional[str]
+    cover: str | None
+    area_v2_name: str | None
 
-    apiSeasonInfo: Optional[APISeasonInfo]
+    apiSeasonInfo: APISeasonInfo | None
 
-    new_desc: Optional[str]
+    new_desc: str | None

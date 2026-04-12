@@ -1,4 +1,3 @@
-from typing import Optional
 
 from loguru import logger
 from nonebot import get_driver
@@ -10,10 +9,10 @@ class Config(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     fastapi_reload: bool = False
-    haruka_dir: Optional[str] = None
+    haruka_dir: str | None = None
     haruka_to_me: bool = True
     haruka_live_off_notify: bool = False
-    haruka_proxy: Optional[str] = None
+    haruka_proxy: str | None = None
     haruka_interval: int = 10
     haruka_live_interval: int = haruka_interval
     haruka_dynamic_interval: int = 0
@@ -21,10 +20,10 @@ class Config(BaseModel):
     haruka_screenshot_style: str = "mobile"
     haruka_captcha_address: str = "https://captcha-cd.ngworks.cn"
     haruka_captcha_token: str = "harukabot"
-    haruka_browser_ua: Optional[str] = None
+    haruka_browser_ua: str | None = None
     haruka_dynamic_timeout: int = 30
     haruka_dynamic_font_source: str = "system"
-    haruka_dynamic_font: Optional[str] = "Noto Sans CJK SC"
+    haruka_dynamic_font: str | None = "Noto Sans CJK SC"
     haruka_dynamic_big_image: bool = False
     haruka_command_prefix: str = ""
 

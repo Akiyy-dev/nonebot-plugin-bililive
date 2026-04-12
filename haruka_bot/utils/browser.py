@@ -4,17 +4,17 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Optional
 
 from nonebot.log import logger
 from playwright.__main__ import main
-from playwright.async_api import BrowserContext, async_playwright, Page
+from playwright.async_api import BrowserContext, Page, async_playwright
 
 from ..config import plugin_config
-from .fonts_provider import fill_font
 from ..utils import get_path
+from .captcha_solver import CaptchaInfer
+from .fonts_provider import fill_font
 
-_browser: Optional[BrowserContext] = None
+_browser: BrowserContext | None = None
 mobile_js = Path(__file__).parent.joinpath("mobile.js")
 
 
@@ -65,7 +65,7 @@ async def get_browser() -> BrowserContext:
 
 async def get_dynamic_screenshot(dynamic_id, style=plugin_config.haruka_screenshot_style):
     """获取动态截图"""
-    image: Optional[bytes] = None
+    image: bytes | None = None
     err = ""
     for i in range(3):
         browser = await get_browser()
@@ -116,8 +116,6 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
     await page.set_viewport_size({"width": 460, "height": 780})
     await page.route(re.compile("^https://static.graiax/fonts/(.+)$"), fill_font)
     if plugin_config.haruka_captcha_address:
-        from aunly_captcha_solver import CaptchaInfer
-
         captcha = CaptchaInfer(
             plugin_config.haruka_captcha_address, plugin_config.haruka_captcha_token
         )
@@ -130,9 +128,11 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
     # await page.add_script_tag(
     #     content=
     #     # 去除打开app按钮
-    #     "document.getElementsByClassName('m-dynamic-float-openapp').forEach(v=>v.remove());"
+    #     "document.getElementsByClassName('m-dynamic-float-openapp')"
+    #     ".forEach(v=>v.remove());"
     #     # 去除关注按钮
-    #     "document.getElementsByClassName('dyn-header__following').forEach(v=>v.remove());"
+    #     "document.getElementsByClassName('dyn-header__following')"
+    #     ".forEach(v=>v.remove());"
     #     # 修复字体与换行问题
     #     "const dyn=document.getElementsByClassName('dyn-card')[0];"
     #     "dyn.style.fontFamily='Noto Sans CJK SC, sans-serif';"
@@ -140,7 +140,10 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
     # )
 
     await page.wait_for_load_state(state="domcontentloaded")
-    await page.wait_for_selector(".b-img__inner, .dyn-header__author__face", state="visible")
+    await page.wait_for_selector(
+        ".b-img__inner, .dyn-header__author__face",
+        state="visible",
+    )
 
     await page.add_script_tag(path=mobile_js)
 
@@ -165,7 +168,8 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
     need_wait = ["imageComplete", "fontsLoaded"]
     await asyncio.gather(*[page.wait_for_function(f"{i}()") for i in need_wait])
 
-    card = await page.query_selector(".opus-modules" if "opus" in page.url else ".dyn-card")
+    selector = ".opus-modules" if "opus" in page.url else ".dyn-card"
+    card = await page.query_selector(selector)
     assert card
     clip = await card.bounding_box()
     assert clip
@@ -225,10 +229,11 @@ async def check_playwright_env():
     try:
         async with async_playwright() as p:
             await p.chromium.launch()
-    except Exception:
+    except Exception as err:
         raise ImportError(
-            "加载失败，Playwright 依赖不全，" "解决方法：https://haruka-bot.sk415.icu/faq.html#playwright-依赖不全"
-        )
+            "加载失败，Playwright 依赖不全，"
+            "解决方法：https://haruka-bot.sk415.icu/faq.html#playwright-依赖不全"
+        ) from err
 
 
 class Notfound(Exception):
