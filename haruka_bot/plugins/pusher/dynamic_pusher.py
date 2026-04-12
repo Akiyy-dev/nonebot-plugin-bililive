@@ -29,7 +29,9 @@ async def dy_sched():
         await asyncio.sleep(1)
         return
     user = await db.get_user(uid=uid)
-    assert user is not None
+    if user is None:
+        logger.warning(f"动态推送跳过异常订阅 UID：{uid}")
+        return
     name = user.name
 
     logger.debug(f"爬取动态 {name}（{uid}）")

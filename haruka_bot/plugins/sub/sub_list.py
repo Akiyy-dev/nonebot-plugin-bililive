@@ -17,9 +17,9 @@ async def _(event: MessageEvent, bot: Bot):
     subs = await db.get_sub_list(event.message_type, await get_type_id(event))
     for sub in subs:
         user = await db.get_user(uid=sub.uid)
-        assert user is not None
+        name = user.name if user else "未知UP"
         message += (
-            f"{user.name}（{user.uid}）\n"
+            f"{name}（{sub.uid}）\n"
             f"直播：{'开' if sub.live else '关'}，"
             f"动态：{'开' if sub.dynamic else '关'}，"
             # TODO 私聊不显示全体

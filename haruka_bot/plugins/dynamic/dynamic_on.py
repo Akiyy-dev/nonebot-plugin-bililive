@@ -31,7 +31,6 @@ async def _(event: MessageEvent, uid: str = ArgPlainText("uid")):
         type=event.message_type,
         type_id=await get_type_id(event),
     ):
-        user = await db.get_user(uid=uid)
-        assert user is not None
-        await dynamic_on.finish(f"已开启 {user.name}（{user.uid}）的动态推送")
+        name = await db.get_name(uid) or "该UP主"
+        await dynamic_on.finish(f"已开启 {name}（{uid}）的动态推送")
     await dynamic_on.finish(f"UID（{uid}）未关注，请先关注后再操作")

@@ -39,10 +39,9 @@ async def _(
     if await db.set_sub(
         "at", True, uid=uid, type=event.message_type, type_id=await get_type_id(event)
     ):
-        user = await db.get_user(uid=uid)
-        assert user is not None
+        name = await db.get_name(uid) or "该UP主"
         await at_on.finish(
-            f"已开启 {user.name}（{user.uid}）"
+            f"已开启 {name}（{uid}）"
             f"{'直播推送' if not plugin_config.haruka_dynamic_at else ''}的@全体"
         )
     await at_on.finish(f"UID（{uid}）未关注，请先关注后再操作")

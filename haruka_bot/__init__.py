@@ -1,5 +1,8 @@
+from .compat import patch_httpx_compat
 from nonebot.plugin import PluginMetadata
 from nonebot.plugin.manager import PluginLoader
+
+patch_httpx_compat()
 
 if isinstance(globals()["__loader__"], PluginLoader):
     from .utils import on_startup

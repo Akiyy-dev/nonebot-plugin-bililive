@@ -73,7 +73,8 @@ async def b23_extract(text: str):
         url = f"https://b23.tv/{b23[2]}"
         for _ in range(3):
             with contextlib.suppress(Exception):
-                resp = await httpx.AsyncClient().get(url, follow_redirects=True)
+                async with httpx.AsyncClient(proxy=plugin_config.haruka_proxy) as client:
+                    resp = await client.get(url, follow_redirects=True)
                 break
         else:
             return None
@@ -206,7 +207,9 @@ async def safe_send(bot_id, send_type, type_id, message, at=False):
             from ..database import DB as db
 
             guild = await db.get_guild(id=type_id)
-            assert guild
+            if guild is None:
+                logger.error(f"推送失败，频道订阅记录不存在（type_id={type_id}）")
+                return None
             result = await bot.send_guild_channel_msg(
                 guild_id=guild.guild_id,
                 channel_id=guild.channel_id,
@@ -260,7 +263,9 @@ async def safe_send(bot_id, send_type, type_id, message, at=False):
             from ..database import DB as db
 
             guild = await db.get_guild(id=type_id)
-            assert guild
+            if guild is None:
+                logger.error(f"推送失败，频道订阅记录不存在（type_id={type_id}）")
+                return
             await db.delete_sub_list(type="guild", type_id=type_id)
             await db.delete_guild(id=type_id)
             logger.error(f"推送失败，频道（{guild.guild_id}|{guild.channel_id}）不存在，已自动清理频道订阅列表")
@@ -286,11 +291,8 @@ def check_proxy():
     if plugin_config.haruka_proxy:
         logger.info("检查代理是否有效")
         try:
-            httpx.get(
-                "https://icanhazip.com/",
-                proxies={"all://": plugin_config.haruka_proxy},
-                timeout=2,
-            )
+            with httpx.Client(proxy=plugin_config.haruka_proxy, timeout=2) as client:
+                client.get("https://icanhazip.com/")
         except Exception:
             raise RuntimeError("加载失败，代理无法连接，请检查 HARUKA_PROXY 后重试")
 

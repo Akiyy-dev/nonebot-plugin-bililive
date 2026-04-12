@@ -10,6 +10,9 @@ logs/
 test/
 _test/
 tests/
+!tests/
+tests/*
+!tests/test_maintenance.py
 migration/
 playground/
 

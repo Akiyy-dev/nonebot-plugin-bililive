@@ -135,20 +135,28 @@ class DB:
         return True
 
     @classmethod
-    async def set_permission(cls, id, switch):
+    async def set_permission(cls, id, switch) -> bool:
         """设置指定群组权限"""
-        if not await cls.add_group(id=id, admin=switch):
-            await Group.update({"id": id}, admin=switch)
+        group = await cls.get_group(id=id)
+        if not group:
+            await cls.add_group(id=id, admin=switch)
+            return True
+        if bool(group.admin) == switch:
+            return False
+        await Group.update({"id": id}, admin=switch)
+        return True
 
     @classmethod
-    async def set_guild_permission(cls, guild_id, channel_id, switch):
+    async def set_guild_permission(cls, guild_id, channel_id, switch) -> bool:
         """设置指定频道权限"""
-        if not await cls.add_guild(
-            guild_id=guild_id, channel_id=channel_id, admin=switch
-        ):
-            await Guild.update(
-                {"guild_id": guild_id, "channel_id": channel_id}, admin=switch
-            )
+        guild = await cls.get_guild(guild_id=guild_id, channel_id=channel_id)
+        if not guild:
+            await cls.add_guild(guild_id=guild_id, channel_id=channel_id, admin=switch)
+            return True
+        if bool(guild.admin) == switch:
+            return False
+        await Guild.update({"guild_id": guild_id, "channel_id": channel_id}, admin=switch)
+        return True
 
     @classmethod
     async def get_guild(cls, **kwargs):

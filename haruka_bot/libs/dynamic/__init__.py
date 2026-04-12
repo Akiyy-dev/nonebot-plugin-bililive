@@ -1,6 +1,6 @@
 from typing import Optional
 from nonebot.adapters.onebot.v11.message import MessageSegment, Message
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 
 # from pydantic import Json
 
@@ -24,15 +24,15 @@ class Dynamic(BaseModel):
     name: str = ""
     message: Optional[Message]
 
-    @root_validator()
-    def set_args(cls, values):
-        values["type"] = values["desc"].type
-        values["id"] = values["desc"].dynamic_id
-        values["url"] = f"https://t.bilibili.com/{values['id']}"
-        values["time"] = values["desc"].timestamp
-        values["uid"] = values["desc"].user_profile.info.uid
-        values["name"] = values["desc"].user_profile.info.uname
-        return values
+    @model_validator(mode="after")
+    def set_args(self):
+        self.type = self.desc.type
+        self.id = self.desc.dynamic_id
+        self.url = f"https://t.bilibili.com/{self.id}"
+        self.time = self.desc.timestamp
+        self.uid = self.desc.user_profile.info.uid
+        self.name = self.desc.user_profile.info.uname
+        return self
 
     async def format(self, img):
         type_msg = {

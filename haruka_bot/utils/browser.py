@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Optional
 
 from nonebot.log import logger
-from aunly_captcha_solver import CaptchaInfer
 from playwright.__main__ import main
 from playwright.async_api import BrowserContext, async_playwright, Page
 
@@ -117,6 +116,8 @@ async def get_dynamic_screenshot_mobile(dynamic_id, page: Page):
     await page.set_viewport_size({"width": 460, "height": 780})
     await page.route(re.compile("^https://static.graiax/fonts/(.+)$"), fill_font)
     if plugin_config.haruka_captcha_address:
+        from aunly_captcha_solver import CaptchaInfer
+
         captcha = CaptchaInfer(
             plugin_config.haruka_captcha_address, plugin_config.haruka_captcha_token
         )
@@ -195,9 +196,9 @@ def install():
     """自动安装、更新 Chromium"""
 
     def restore_env():
-        del os.environ["PLAYWRIGHT_DOWNLOAD_HOST"]
+        os.environ.pop("PLAYWRIGHT_DOWNLOAD_HOST", None)
         if plugin_config.haruka_proxy:
-            del os.environ["HTTPS_PROXY"]
+            os.environ.pop("HTTPS_PROXY", None)
         if original_proxy is not None:
             os.environ["HTTPS_PROXY"] = original_proxy
 
@@ -206,7 +207,6 @@ def install():
     original_proxy = os.environ.get("HTTPS_PROXY")
     if plugin_config.haruka_proxy:
         os.environ["HTTPS_PROXY"] = plugin_config.haruka_proxy
-    os.environ["PLAYWRIGHT_DOWNLOAD_HOST"] = "https://npmmirror.com/mirrors/playwright/"
     success = False
     try:
         main()
@@ -214,14 +214,8 @@ def install():
         if e.code == 0:
             success = True
     if not success:
-        logger.info("Chromium 更新失败，尝试从原始仓库下载，速度较慢")
-        os.environ["PLAYWRIGHT_DOWNLOAD_HOST"] = ""
-        try:
-            main()
-        except SystemExit as e:
-            if e.code != 0:
-                restore_env()
-                raise RuntimeError("未知错误，Chromium 下载失败")
+        restore_env()
+        raise RuntimeError("未知错误，Chromium 下载失败")
     restore_env()
 
 
