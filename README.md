@@ -23,33 +23,6 @@ _✨ 将 B 站 UP 主动态与直播推送到 QQ 的 NoneBot2 插件 ✨_
 
 </div>
 
-> 当前仓库已按 NoneBot 插件模板整理，可直接作为插件包发布到 PyPI 并在 NoneBot2 项目中安装使用。
-
-<details>
-<summary>配置发布工作流</summary>
-
-1. 前往 https://pypi.org/manage/account/#api-tokens 创建新的 PyPI API Token。
-2. 打开当前 GitHub 仓库的 Settings - Secrets and variables - Actions。
-3. 新建名为 PYPI_API_TOKEN 的 Repository Secret，并填入刚刚创建的 Token。
-
-</details>
-
-> [!IMPORTANT]
-> 当前项目使用符合 PEP 621 的 pyproject.toml，并已补充基于 tag 触发的 PyPI 发布工作流。
-
-<details>
-<summary>触发发布</summary>
-
-创建 tag：
-
-	git tag v1.6.0post5
-
-推送 tag：
-
-	git push origin --tags
-
-</details>
-
 ## 📖 介绍
 
 BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直播与动态消息推送到 QQ 群或私聊场景。当前项目已将发布名、插件入口、核心实现包和工作流统一整理为 nonebot-plugin-bililive，便于作为独立插件分发。
