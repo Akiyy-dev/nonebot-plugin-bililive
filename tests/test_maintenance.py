@@ -27,8 +27,9 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     compat = import_module("bililive.compat")
     Config = import_module("bililive.config").Config
     core_version = import_module("bililive.version")
+    db_module = import_module("bililive.database.db")
     plugin_entry = import_module("nonebot_plugin_bililive")
-    DB = import_module("bililive.database.db").DB
+    DB = db_module.DB
     models = import_module("bililive.database.models")
     Group = models.Group
 
@@ -89,6 +90,24 @@ class PluginEntryTests(unittest.TestCase):
 
 
 class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_db_init_enables_global_fallback(self):
+        with (
+            patch.object(db_module.Tortoise, "init", new=AsyncMock()) as init_db,
+            patch.object(
+                db_module.Tortoise,
+                "generate_schemas",
+                new=AsyncMock(),
+            ) as generate_schemas,
+            patch.object(DB, "migrate", new=AsyncMock()) as migrate,
+            patch.object(DB, "update_uid_list", new=AsyncMock()) as update_uid_list,
+        ):
+            await DB.init()
+
+        self.assertTrue(init_db.await_args.kwargs["_enable_global_fallback"])
+        generate_schemas.assert_awaited_once()
+        migrate.assert_awaited_once()
+        update_uid_list.assert_awaited_once()
+
     async def test_set_permission_creates_group_when_missing(self):
         with (
             patch.object(DB, "get_group", new=AsyncMock(return_value=None)),

@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from time import monotonic
 
 from apscheduler.events import (
     EVENT_JOB_ERROR,
@@ -20,19 +21,36 @@ from ...database import DB as db
 from ...database import dynamic_offset as offset
 from ...utils import get_dynamic_screenshot, safe_send, scheduler
 
+RISK_CONTROL_RETRY_SECONDS = 3600
+dynamic_risk_control_until = {}
+
+
+async def throttle_dynamic_loop():
+    if plugin_config.bililive_dynamic_interval == 0:
+        await asyncio.sleep(1)
+
 
 async def dy_sched():
     """动态推送"""
     uid = await db.next_uid("dynamic")
     if not uid:
         # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高
-        await asyncio.sleep(1)
+        await throttle_dynamic_loop()
         return
     user = await db.get_user(uid=uid)
     if user is None:
         logger.warning(f"动态推送跳过异常订阅 UID：{uid}")
+        await throttle_dynamic_loop()
         return
     name = user.name
+
+    retry_at = dynamic_risk_control_until.get(uid)
+    if retry_at is not None:
+        if retry_at > monotonic():
+            logger.debug(f"动态接口风控冷却中，跳过 {name}（{uid}）")
+            await throttle_dynamic_loop()
+            return
+        del dynamic_risk_control_until[uid]
 
     logger.debug(f"爬取动态 {name}（{uid}）")
     try:
@@ -49,10 +67,22 @@ async def dy_sched():
             logger.error(f"爬取动态超时，将在下个轮询中重试：{e.code()} {e.details()}")
         else:
             logger.error(f"爬取动态失败：{e.code()} {e.details()}")
+        await throttle_dynamic_loop()
         return
     except GrpcError as e:
-        logger.error(f"爬取动态失败：{e.code} {e.msg}")
+        if e.code == -352:
+            dynamic_risk_control_until[uid] = monotonic() + RISK_CONTROL_RETRY_SECONDS
+            retry_minutes = RISK_CONTROL_RETRY_SECONDS // 60
+            logger.warning(
+                f"动态接口触发风控，{name}（{uid}）将在 "
+                f"{retry_minutes} 分钟后重试：{e.code} {e.msg}"
+            )
+        else:
+            logger.error(f"爬取动态失败：{e.code} {e.msg}")
+        await throttle_dynamic_loop()
         return
+
+    dynamic_risk_control_until.pop(uid, None)
 
     if not dynamics:  # 没发过动态
         if uid in offset and offset[uid] == -1:  # 不记录会导致第一次发动态不推送
