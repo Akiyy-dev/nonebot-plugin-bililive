@@ -22,6 +22,10 @@ class DB:
     _ready = False
 
     @classmethod
+    def get_dynamic_offset_path(cls) -> Path:
+        return Path(get_path("dynamic_offset.json"))
+
+    @classmethod
     async def init(cls):
         """初始化数据库"""
         cls._ready = False
@@ -46,11 +50,14 @@ class DB:
         await Tortoise.generate_schemas()
         await cls.migrate()
         await cls.update_uid_list()
+        await cls.load_dynamic_offsets()
+        await cls.save_dynamic_offsets()
         cls._ready = True
 
     @classmethod
     async def close(cls):
         cls._ready = False
+        await cls.save_dynamic_offsets()
         await connections.close_all()
 
     @classmethod
@@ -67,6 +74,43 @@ class DB:
             waited += interval
 
         return cls._ready
+
+    @classmethod
+    async def load_dynamic_offsets(cls):
+        path = cls.get_dynamic_offset_path()
+        if not path.exists():
+            return
+        try:
+            raw_offsets = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            logger.warning("动态偏移量缓存读取失败，将使用当前内存状态继续运行")
+            return
+
+        for uid_str, value in raw_offsets.items():
+            try:
+                uid = int(uid_str)
+                dynamic_id = int(value)
+            except (TypeError, ValueError):
+                continue
+            if uid in dynamic_offset:
+                dynamic_offset[uid] = dynamic_id
+
+    @classmethod
+    async def save_dynamic_offsets(cls):
+        path = cls.get_dynamic_offset_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        serialized_offsets = {
+            str(uid): dynamic_offset[uid] for uid in sorted(dynamic_offset)
+        }
+        path.write_text(
+            json.dumps(serialized_offsets, ensure_ascii=False, sort_keys=True),
+            encoding="utf-8",
+        )
+
+    @classmethod
+    async def set_dynamic_offset(cls, uid: int, value: int):
+        dynamic_offset[int(uid)] = int(value)
+        await cls.save_dynamic_offsets()
 
     @classmethod
     async def get_user(cls, **kwargs):
@@ -277,12 +321,17 @@ class DB:
         )
 
         # 清除没有订阅的 offset
+        changed = False
         dynamic_offset_keys = set(dynamic_offset)
         dynamic_uids = set(uid_list["dynamic"]["list"])
         for uid in dynamic_offset_keys - dynamic_uids:
             del dynamic_offset[uid]
+            changed = True
         for uid in dynamic_uids - dynamic_offset_keys:
             dynamic_offset[uid] = -1
+            changed = True
+        if changed:
+            await cls.save_dynamic_offsets()
 
     async def backup(self):
         """备份数据库"""

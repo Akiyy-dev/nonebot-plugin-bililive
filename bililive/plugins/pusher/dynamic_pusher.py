@@ -202,20 +202,17 @@ async def dy_sched():
 
     if not dynamics:  # 没发过动态
         if uid in offset and offset[uid] == -1:  # 不记录会导致第一次发动态不推送
-            offset[uid] = 0
+            await db.set_dynamic_offset(uid, 0)
         return
     name = get_dynamic_author_name(dynamics[0], use_web_fallback)
 
     if uid not in offset:  # 已删除
         return
     elif offset[uid] == -1:  # 第一次爬取
-        if len(dynamics) == 1:  # 只有一条动态
-            offset[uid] = get_dynamic_id(dynamics[0], use_web_fallback)
-        else:  # 第一个可能是置顶动态，但置顶也可能是最新一条，所以取前两条的最大值
-            offset[uid] = max(
-                get_dynamic_id(dynamics[0], use_web_fallback),
-                get_dynamic_id(dynamics[1], use_web_fallback),
-            )
+        await db.set_dynamic_offset(
+            uid,
+            max(get_dynamic_id(item, use_web_fallback) for item in dynamics),
+        )
         return
 
     dynamic = None
@@ -234,7 +231,7 @@ async def dy_sched():
                 return
             elif should_skip_dynamic(dynamic_type, use_web_fallback):
                 logger.debug(f"无需推送的动态 {dynamic_type}，已跳过：{url}")
-                offset[uid] = dynamic_id
+                await db.set_dynamic_offset(uid, dynamic_id)
                 return
             message = (
                 f"{name} {get_dynamic_type_message(dynamic_type, use_web_fallback)}：\n"
@@ -253,7 +250,7 @@ async def dy_sched():
                     at=bool(sets.at) and plugin_config.bililive_dynamic_at,
                 )
 
-            offset[uid] = dynamic_id
+            await db.set_dynamic_offset(uid, dynamic_id)
 
     if dynamic:
         await db.update_user(uid, name)

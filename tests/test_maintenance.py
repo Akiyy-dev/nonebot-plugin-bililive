@@ -1,6 +1,8 @@
 import sys
+import tempfile
 import unittest
 from importlib import import_module
+from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -156,6 +158,23 @@ class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
         ready = await DB.wait_until_ready(timeout=0)
 
         self.assertFalse(ready)
+
+    async def test_dynamic_offsets_are_persisted_and_restored(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            offset_path = Path(tmpdir) / "dynamic_offset.json"
+            db_module.dynamic_offset.clear()
+            db_module.dynamic_offset[123] = 456
+
+            with patch.object(db_module, "get_path", return_value=str(offset_path)):
+                await DB.save_dynamic_offsets()
+
+                db_module.dynamic_offset.clear()
+                db_module.dynamic_offset[123] = -1
+                db_module.dynamic_offset[789] = -1
+                await DB.load_dynamic_offsets()
+
+            self.assertEqual(db_module.dynamic_offset[123], 456)
+            self.assertEqual(db_module.dynamic_offset[789], -1)
 
     async def test_set_permission_creates_group_when_missing(self):
         with (
