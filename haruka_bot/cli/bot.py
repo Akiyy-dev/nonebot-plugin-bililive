@@ -11,9 +11,10 @@ driver = nonebot.get_driver()
 driver.register_adapter(Adapter)
 app = nonebot.get_asgi()
 
-# 删除 haruka_bot 导入，否则 nonebot 导入时会忽略
-del sys.modules["haruka_bot"]
-nonebot.load_plugin("haruka_bot")
+# 删除插件缓存导入，否则 nonebot 导入时会忽略
+for module_name in ("nonebot_plugin_haruka_bot", "haruka_bot"):
+    sys.modules.pop(module_name, None)
+nonebot.load_plugin("nonebot_plugin_haruka_bot")
 
 # Modify some config / config depends on loaded configs
 #

@@ -27,6 +27,7 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
 ), patch.dict(sys.modules, {"nonebot_plugin_apscheduler": fake_apscheduler}):
     compat = import_module("haruka_bot.compat")
     Config = import_module("haruka_bot.config").Config
+    plugin_entry = import_module("nonebot_plugin_haruka_bot")
     DB = import_module("haruka_bot.database.db").DB
     models = import_module("haruka_bot.database.models")
     Group = models.Group
@@ -62,6 +63,13 @@ class CompatTests(unittest.TestCase):
         client = httpx.AsyncClient(proxies={"all://": None})
         self.assertIsInstance(client, httpx.AsyncClient)
         self.addCleanup(lambda: __import__("asyncio").run(client.aclose()))
+
+
+class PluginEntryTests(unittest.TestCase):
+    def test_wrapper_entry_exposes_plugin_metadata(self):
+        self.assertEqual(plugin_entry.__plugin_meta__.homepage, "https://github.com/SK-415/HarukaBot")
+        self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
+        self.assertEqual(plugin_entry.__version__, "1.6.0post5")
 
 
 class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
