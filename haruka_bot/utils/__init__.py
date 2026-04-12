@@ -1,14 +1,14 @@
 import asyncio
-import sys
-import re
 import contextlib
 import datetime
+import re
+import sys
 from pathlib import Path
-from typing import Union
-from bilireq.utils import get
+from typing import Annotated
 
 import httpx
 import nonebot
+from bilireq.utils import get
 from nonebot import on_command as _on_command
 from nonebot import require
 from nonebot.adapters.onebot.v11 import (
@@ -43,7 +43,7 @@ def get_path(*other):
 
 async def handle_uid(
     matcher: Matcher,
-    command_arg: Message = CommandArg(),
+    command_arg: Annotated[Message, CommandArg()],
 ):
     if command_arg.extract_plain_text().strip():
         matcher.set_arg("uid", command_arg)
@@ -57,7 +57,9 @@ async def uid_check(
     if extract := await uid_extract(uid):
         uid = extract
     else:
-        await matcher.finish("未找到该 UP，请输入正确的 UP 群内昵称、UP 名、UP UID或 UP 首页链接")
+        await matcher.finish(
+            "未找到该 UP，请输入正确的 UP 群内昵称、UP 名、UP UID或 UP 首页链接"
+        )
     matcher.set_arg("uid", Message(uid))
 
 
@@ -93,7 +95,7 @@ async def search_user(keyword: str):
     return resp
 
 
-async def get_user_name_by_uid(uid: Union[int, str]) -> Union[str, None]:
+async def get_user_name_by_uid(uid: int | str) -> str | None:
     """通过较稳定的 card 接口获取用户昵称"""
     url = "https://api.bilibili.com/x/web-interface/card"
     headers = {
@@ -144,7 +146,7 @@ async def uid_extract(text: str):
 
 
 async def permission_check(
-    bot: Bot, event: Union[GroupMessageEvent, PrivateMessageEvent]
+    bot: Bot, event: GroupMessageEvent | PrivateMessageEvent
 ):
     from ..database import DB as db
 
@@ -161,7 +163,11 @@ async def permission_check(
     raise FinishedException
 
 
-async def group_only(matcher: Matcher, event: PrivateMessageEvent, command: str = RawCommand()):
+async def group_only(
+    matcher: Matcher,
+    event: PrivateMessageEvent,
+    command: Annotated[str, RawCommand()],
+):
     await matcher.finish(f"只有群里才能{command}")
 
 
@@ -259,14 +265,18 @@ def check_proxy():
         try:
             with httpx.Client(proxy=plugin_config.haruka_proxy, timeout=2) as client:
                 client.get("https://icanhazip.com/")
-        except Exception:
-            raise RuntimeError("加载失败，代理无法连接，请检查 HARUKA_PROXY 后重试")
+        except Exception as err:
+            raise RuntimeError(
+                "加载失败，代理无法连接，请检查 HARUKA_PROXY 后重试"
+            ) from err
 
 
 def on_startup():
     """安装依赖并检查当前环境是否满足运行条件"""
     if plugin_config.fastapi_reload and sys.platform == "win32":
-        raise ImportError("加载失败，Windows 必须设置 FASTAPI_RELOAD=false 才能正常运行 HarukaBot")
+        raise ImportError(
+            "加载失败，Windows 必须设置 FASTAPI_RELOAD=false 才能正常运行 HarukaBot"
+        )
     try:  # 如果开启 realod 只在第一次运行
         asyncio.get_running_loop()
     except RuntimeError:

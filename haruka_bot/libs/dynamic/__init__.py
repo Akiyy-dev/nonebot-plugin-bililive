@@ -1,9 +1,7 @@
-from typing import Optional
-from nonebot.adapters.onebot.v11.message import MessageSegment, Message
+from nonebot.adapters.onebot.v11.message import Message, MessageSegment
 from pydantic import BaseModel, model_validator
 
 # from pydantic import Json
-
 from .desc import Desc
 
 # from .card import Card
@@ -22,7 +20,7 @@ class Dynamic(BaseModel):
     time: int = 0
     uid: int = 0
     name: str = ""
-    message: Optional[Message]
+    message: Message | None
 
     @model_validator(mode="after")
     def set_args(self):

@@ -1,6 +1,7 @@
-from .compat import patch_httpx_compat
 from nonebot.plugin import PluginMetadata
 from nonebot.plugin.manager import PluginLoader
+
+from .compat import patch_httpx_compat
 from .config import Config
 
 patch_httpx_compat()

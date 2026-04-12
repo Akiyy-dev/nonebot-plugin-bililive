@@ -1,4 +1,3 @@
-from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Json
 
@@ -9,7 +8,7 @@ class TopicDetail(BaseModel):
 
 
 class TopicInfo(BaseModel):
-    topic_details: List[TopicDetail]
+    topic_details: list[TopicDetail]
 
 
 class EmojiDetail(BaseModel):
@@ -22,7 +21,7 @@ class EmojiDetail(BaseModel):
 class EmojiInfo(BaseModel):
     """emoji 信息"""
 
-    emoji_details: List[EmojiDetail]
+    emoji_details: list[EmojiDetail]
 
 
 class DescFirst(BaseModel):
@@ -30,22 +29,22 @@ class DescFirst(BaseModel):
 
 
 class ReserveAttachCard(BaseModel):
-    title: Optional[str]
-    desc_first: Optional[Union[str, DescFirst]]
-    desc_second: Optional[str]
-    cover_url: Optional[str]
-    head_text: Optional[str]
+    title: str | None
+    desc_first: str | DescFirst | None
+    desc_second: str | None
+    cover_url: str | None
+    head_text: str | None
 
 
 class AddOnCardInfo(BaseModel):
     add_on_card_show_type: int
-    reserve_attach_card: Optional[ReserveAttachCard]
-    vote_card: Optional[Json]
-    attach_card: Optional[ReserveAttachCard]
+    reserve_attach_card: ReserveAttachCard | None
+    vote_card: Json | None
+    attach_card: ReserveAttachCard | None
 
 
 class Display(BaseModel):
-    topic_info: Optional[TopicInfo]
-    emoji_info: Optional[EmojiInfo]
-    add_on_card_info: Optional[List[AddOnCardInfo]]
-    origin: Optional[Dict]
+    topic_info: TopicInfo | None
+    emoji_info: EmojiInfo | None
+    add_on_card_info: list[AddOnCardInfo] | None
+    origin: dict | None

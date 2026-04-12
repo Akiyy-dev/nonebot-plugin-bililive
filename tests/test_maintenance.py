@@ -1,8 +1,7 @@
+import sys
 import unittest
 from importlib import import_module
-from types import ModuleType
-from types import SimpleNamespace
-import sys
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -67,16 +66,21 @@ class CompatTests(unittest.TestCase):
 
 class PluginEntryTests(unittest.TestCase):
     def test_wrapper_entry_exposes_plugin_metadata(self):
-        self.assertEqual(plugin_entry.__plugin_meta__.homepage, "https://github.com/SK-415/HarukaBot")
+        self.assertEqual(
+            plugin_entry.__plugin_meta__.homepage,
+            "https://github.com/SK-415/HarukaBot",
+        )
         self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
         self.assertEqual(plugin_entry.__version__, "1.6.0post5")
 
 
 class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
     async def test_set_permission_creates_group_when_missing(self):
-        with patch.object(DB, "get_group", new=AsyncMock(return_value=None)), patch.object(
-            DB, "add_group", new=AsyncMock(return_value=True)
-        ) as add_group, patch.object(Group, "update", new=AsyncMock()) as update:
+        with (
+            patch.object(DB, "get_group", new=AsyncMock(return_value=None)),
+            patch.object(DB, "add_group", new=AsyncMock(return_value=True)) as add_group,
+            patch.object(Group, "update", new=AsyncMock()) as update,
+        ):
             changed = await DB.set_permission(123, True)
 
         self.assertTrue(changed)
@@ -85,9 +89,10 @@ class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_set_permission_updates_existing_group_when_state_changes(self):
         group = SimpleNamespace(admin=False)
-        with patch.object(DB, "get_group", new=AsyncMock(return_value=group)), patch.object(
-            Group, "update", new=AsyncMock()
-        ) as update:
+        with (
+            patch.object(DB, "get_group", new=AsyncMock(return_value=group)),
+            patch.object(Group, "update", new=AsyncMock()) as update,
+        ):
             changed = await DB.set_permission(123, True)
 
         self.assertTrue(changed)
@@ -95,9 +100,10 @@ class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_set_permission_is_noop_when_state_matches(self):
         group = SimpleNamespace(admin=False)
-        with patch.object(DB, "get_group", new=AsyncMock(return_value=group)), patch.object(
-            Group, "update", new=AsyncMock()
-        ) as update:
+        with (
+            patch.object(DB, "get_group", new=AsyncMock(return_value=group)),
+            patch.object(Group, "update", new=AsyncMock()) as update,
+        ):
             changed = await DB.set_permission(123, False)
 
         self.assertFalse(changed)
