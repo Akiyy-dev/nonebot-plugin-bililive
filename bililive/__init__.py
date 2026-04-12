@@ -20,10 +20,10 @@ bootstrap_plugin()
 from .version import VERSION, __version__  # noqa: F401
 
 __plugin_meta__ = PluginMetadata(
-    name="haruka_bot",
+    name="BiliLive",
     description="将B站UP主的动态和直播信息推送至QQ",
-    usage="https://haruka-bot.sk415.icu/",
-    homepage="https://github.com/SK-415/HarukaBot",
+    usage="https://github.com/Akiyy-dev/nonebot-plugin-bililive#readme",
+    homepage="https://github.com/Akiyy-dev/nonebot-plugin-bililive",
     type="application",
     config=Config,
     supported_adapters={"~onebot.v11"},

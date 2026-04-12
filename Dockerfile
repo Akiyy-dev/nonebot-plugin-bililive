@@ -1,15 +1,15 @@
 FROM mcr.microsoft.com/playwright/python:v1.22.0-focal
 
-LABEL maintainer="https://github.com/SK-415/HarukaBot"
+LABEL maintainer="https://github.com/Akiyy-dev/nonebot-plugin-bililive"
 
 EXPOSE 8080
 
-RUN pip install haruka-bot -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install nonebot-plugin-bililive -i https://mirrors.aliyun.com/pypi/simple/
 
-WORKDIR /haruka_bot
+WORKDIR /bililive
 
-COPY .env.prod /haruka_bot/.env.prod
+COPY .env.prod /bililive/.env.prod
 
 ENV TZ=Asia/Shanghai LANG=zh_CN.UTF-8 HOST=0.0.0.0
 
-CMD ["hb" ,"run"]
+CMD ["bililive", "run"]

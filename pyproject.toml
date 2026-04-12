@@ -1,5 +1,5 @@
 [project]
-name = "nonebot-plugin-haruka-bot"
+name = "nonebot-plugin-bililive"
 description = "Push bilibili dynamics and live notifications to QQ with NoneBot2."
 authors = [
     {name = "SK-415", email = "2967923486@qq.com"},
@@ -35,31 +35,31 @@ dependencies = [
 dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://github.com/SK-415/HarukaBot"
-Repository = "https://github.com/SK-415/HarukaBot"
-Documentation = "https://haruka-bot.sk415.icu"
-Issues = "https://github.com/SK-415/HarukaBot/issues"
+Homepage = "https://github.com/Akiyy-dev/nonebot-plugin-bililive"
+Repository = "https://github.com/Akiyy-dev/nonebot-plugin-bililive"
+Documentation = "https://github.com/Akiyy-dev/nonebot-plugin-bililive#readme"
+Issues = "https://github.com/Akiyy-dev/nonebot-plugin-bililive/issues"
 
 [tool.nonebot]
 adapters = [
     { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
 ]
-plugins = ["nonebot_plugin_haruka_bot"]
+plugins = ["nonebot_plugin_bililive"]
 plugin_dirs = []
 builtin_plugins = []
 
 [project.scripts]
-hb = "haruka_bot.__main__:main"
+bililive = "bililive.__main__:main"
 
 [tool.pdm]
 distribution = true
 
 [tool.pdm.version]
 source = "file"
-path = "haruka_bot/version.py"
+path = "bililive/version.py"
 
 [tool.pdm.build]
-includes = ["haruka_bot", "nonebot_plugin_haruka_bot"]
+includes = ["bililive", "nonebot_plugin_bililive"]
 
 [tool.pdm.dev-dependencies]
 dev = [

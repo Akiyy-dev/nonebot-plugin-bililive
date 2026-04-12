@@ -1,6 +1,6 @@
 {
-    "name": "HarukaBot",
-    "short_name": "HarukaBot",
+    "name": "BiliLive",
+    "short_name": "BiliLive",
     "description": "哔哩哔哩消息推送机器人",
     "start_url": "/index.html",
     "display": "standalone",

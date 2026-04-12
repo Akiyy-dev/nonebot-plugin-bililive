@@ -1,5 +1,5 @@
 name: 错误回报
-description: 在使用 HarukaBot 的过程中遇到了错误
+description: 在使用 BiliLive 的过程中遇到了错误
 title: '【错误回报】'
 labels: [ "bug?" ]
 
@@ -20,8 +20,8 @@ body:
   - type: input
     id: hb_version
     attributes:
-      label: HarukaBot 版本
-      description: 可发送「帮助」或使用 pip show haruka-bot 查看
+      label: BiliLive 版本
+      description: 可发送「帮助」或使用 pip show nonebot-plugin-bililive 查看
     validations:
       required: true
 
@@ -45,5 +45,5 @@ body:
     id: log
     attributes:
       label: 报错日志（如果有）
-      description: 运行 hb run 的目录中的 log\error.log 文件
+      description: 运行 bililive run 的目录中的 log\error.log 文件
       render: bash

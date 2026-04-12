@@ -6,7 +6,7 @@ import { defaultTheme } from 'vuepress-vite'
 
 export default {
   lang: 'zh-CN',
-  title: 'HarukaBot',
+  title: 'BiliLive',
   description: '哔哩哔哩消息推送 QQ 机器人',
   head: [
     ['link', { rel: 'icon', href: '/logo.png' }],
@@ -15,7 +15,7 @@ export default {
   ],
   theme: defaultTheme({
     logo: '/logo.png',
-    repo: 'SK-415/HarukaBot',
+    repo: 'Akiyy-dev/nonebot-plugin-bililive',
     docsDir: 'docs',
     docsBranch: 'dev',
     editLinkText: '在 GitHub 上编辑此页',
@@ -42,7 +42,7 @@ export default {
           children: [
             '/install/',
             '/install/install-go-cqhttp',
-            '/install/install-HarukaBot',
+            '/install/install-bililive',
             '/install/congrats'
           ]
         }
@@ -79,7 +79,7 @@ export default {
     }),
     docsearchPlugin({
       apiKey: 'b42f3ac623cf606bb9ea15b3e8c888d0',
-      indexName: 'haruka-bot',
+      indexName: 'nonebot-plugin-bililive',
       placeholder: '搜索文档',
     })
   ]

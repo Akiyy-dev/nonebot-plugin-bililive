@@ -24,30 +24,43 @@ fake_apscheduler.scheduler = SimpleNamespace()
 with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     "nonebot.require", return_value=None
 ), patch.dict(sys.modules, {"nonebot_plugin_apscheduler": fake_apscheduler}):
-    compat = import_module("haruka_bot.compat")
-    Config = import_module("haruka_bot.config").Config
-    plugin_entry = import_module("nonebot_plugin_haruka_bot")
-    DB = import_module("haruka_bot.database.db").DB
-    models = import_module("haruka_bot.database.models")
+    compat = import_module("bililive.compat")
+    Config = import_module("bililive.config").Config
+    plugin_entry = import_module("nonebot_plugin_bililive")
+    DB = import_module("bililive.database.db").DB
+    models = import_module("bililive.database.models")
     Group = models.Group
 
 
 class ConfigTests(unittest.TestCase):
     def test_negative_intervals_fall_back_to_defaults(self):
         config = Config(
-            haruka_interval=-1,
-            haruka_live_interval=-1,
-            haruka_dynamic_interval=-1,
+            bililive_interval=-1,
+            bililive_live_interval=-1,
+            bililive_dynamic_interval=-1,
         )
 
-        self.assertEqual(config.haruka_interval, 10)
-        self.assertEqual(config.haruka_live_interval, 10)
-        self.assertEqual(config.haruka_dynamic_interval, 0)
+        self.assertEqual(config.bililive_interval, 10)
+        self.assertEqual(config.bililive_live_interval, 10)
+        self.assertEqual(config.bililive_dynamic_interval, 0)
 
     def test_non_mobile_screenshot_style_is_normalized(self):
-        config = Config(haruka_screenshot_style="pc")
+        config = Config(bililive_screenshot_style="pc")
 
-        self.assertEqual(config.haruka_screenshot_style, "mobile")
+        self.assertEqual(config.bililive_screenshot_style, "mobile")
+
+    def test_legacy_haruka_config_names_are_still_supported(self):
+        config = Config.model_validate(
+            {
+                "haruka_interval": -1,
+                "haruka_live_interval": 12,
+                "haruka_command_prefix": "hb",
+            }
+        )
+
+        self.assertEqual(config.bililive_interval, 10)
+        self.assertEqual(config.bililive_live_interval, 12)
+        self.assertEqual(config.bililive_command_prefix, "hb")
 
 
 class CompatTests(unittest.TestCase):
@@ -68,7 +81,7 @@ class PluginEntryTests(unittest.TestCase):
     def test_wrapper_entry_exposes_plugin_metadata(self):
         self.assertEqual(
             plugin_entry.__plugin_meta__.homepage,
-            "https://github.com/SK-415/HarukaBot",
+            "https://github.com/Akiyy-dev/nonebot-plugin-bililive",
         )
         self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
         self.assertEqual(plugin_entry.__version__, "1.6.0post5")

@@ -1,6 +1,6 @@
 # 进阶配置
 
-HarukaBot 存在一些**非必须的**进阶配置项，用户可以在 `.env.prod` 或 `.env.dev` 文件中添加这些配置来改变 HarukaBot 的**默认行为**。
+BiliLive 存在一些**非必须的**进阶配置项，用户可以在 `.env.prod` 或 `.env.dev` 文件中添加这些配置来改变 BiliLive 的**默认行为**。
 
 ::: tip 提示
 添加配置项只需在 `.env.*` 文件最底下另起一行直接添加即可。
@@ -13,111 +13,111 @@ SUPERUSERS=[]
 NICKNAME=[]
 COMMAND_START=[""]
 COMMAND_SEP=["."]
-HARUKA_DIR="./data/"
-HARUKA_TO_ME=false
-HARUKA_GUILD_ADMIN_ROLES=["Haruka", "频道主"]
+BILILIVE_DIR="./data/"
+BILILIVE_TO_ME=false
+BILILIVE_GUILD_ADMIN_ROLES=["Haruka", "频道主"]
 ```
 
 :::
 
-## HARUKA_DIR
+## BILILIVE_DIR
 
 默认值：None
 
-修改数据文件默认存储路径，默认存在 `haruka-bot` 包安装目录下。
+修改数据文件默认存储路径，默认存在 `nonebot-plugin-bililive` 包安装目录下。
 
-**不推荐**使用默认存储位置，这会使得数据文件迁移与管理异常麻烦。**推荐**设置 `HARUKA_DIR="./data/"`，即当前目录的 `data` 文件夹下。
+**不推荐**使用默认存储位置，这会使得数据文件迁移与管理异常麻烦。**推荐**设置 `BILILIVE_DIR="./data/"`，即当前目录的 `data` 文件夹下。
 
 ::: tip 提示
-如果使用 `hb-cli` 部署，会**自动**在 `.env.prod` 中添加 `HARUKA_DIR="./data/"`。
+如果使用 CLI 部署，会**自动**在 `.env.prod` 中添加 `BILILIVE_DIR="./data/"`。
 :::
 
 ```json
-HARUKA_DIR="./data/"
+BILILIVE_DIR="./data/"
 ```
 
-## HARUKA_TO_ME
+## BILILIVE_TO_ME
 
 默认值：True
 
 在群里使用命令前是否需要 @机器人。设置为 `False` 则可以直接触发指令。
 
 ```json
-HARUKA_TO_ME=False
+BILILIVE_TO_ME=False
 ```
 
-## HARUKA_LIVE_OFF_NOTIFY
+## BILILIVE_LIVE_OFF_NOTIFY
 
 默认值：False
 
 是否开启下播提醒。
 
 ```yml
-HARUKA_LIVE_OFF_NOTIFY=True
+BILILIVE_LIVE_OFF_NOTIFY=True
 ```
 
-## HARUKA_PROXY
+## BILILIVE_PROXY
 
 默认值：None
 
 设置后所有网络请求将使用代理端口，仅支持 HTTP 代理。
 
 ```yml
-HARUKA_PROXY=http://127.0.0.1:10809
+BILILIVE_PROXY=http://127.0.0.1:10809
 ```
 
-## HARUKA_INTERVAL
+## BILILIVE_INTERVAL
 
 默认值：10
 
-不推荐使用，请更换为 `HARUKA_LIVE_INTERVAL`。
+不推荐使用，请更换为 `BILILIVE_LIVE_INTERVAL`。
 直播刷新间隔，单位：秒。
 
 ```yml
-HARUKA_INTERVAL=20
+BILILIVE_INTERVAL=20
 ```
 
-## HARUKA_DYNAMIC_INTERVAL
+## BILILIVE_DYNAMIC_INTERVAL
 
 默认值：0
 
 动态刷新间隔，单位：秒。设置为 0 时根据网络情况自动调整间隔。
 
 ```yml
-HARUKA_DYNAMIC_INTERVAL=5
+BILILIVE_DYNAMIC_INTERVAL=5
 ```
 
-## HARUKA_LIVE_INTERVAL
+## BILILIVE_LIVE_INTERVAL
 
-默认值：`HARUKA_INTERVAL` 设置的值
+默认值：`BILILIVE_INTERVAL` 设置的值
 
 直播刷新间隔，单位：秒。
 
 ```yml
-HARUKA_LIVE_INTERVAL=20
+BILILIVE_LIVE_INTERVAL=20
 ```
 
-## HARUKA_DYNAMIC_AT
+## BILILIVE_DYNAMIC_AT
 
 默认值：False
 
 动态、投稿是否也要@全体。
 
 ```yml
-HARUKA_DYNAMIC_AT=True
+BILILIVE_DYNAMIC_AT=True
 ```
 
-<!-- ## HARUKA_SCREENSHOT_STYLE
+<!-- ## BILILIVE_SCREENSHOT_STYLE
 
 默认值：mobile
 
 截图样式，可选值：mobile（手机）、pc（电脑）。
 
 ```yml
-HARUKA_SCREENSHOT_STYLE=pc
+BILILIVE_SCREENSHOT_STYLE=pc
 ``` -->
 
-## HARUKA_CAPTCHA_ADDRESS
+## BILILIVE_CAPTCHA_ADDRESS
 
 默认值：<https://captcha-cd.ngworks.cn>
 
@@ -125,20 +125,20 @@ HARUKA_SCREENSHOT_STYLE=pc
 （如果你不知道这是什么，请忽略）
 
 ```yml
-HARUKA_CAPTCHA_ADDRESS=https://captcha-cd.ngworks.cn
+BILILIVE_CAPTCHA_ADDRESS=https://captcha-cd.ngworks.cn
 ```
 
-## HARUKA_CAPTCHA_TOKEN
+## BILILIVE_CAPTCHA_TOKEN
 
-默认值：harukabot
+默认值：bililive
 
 验证码 Token，用于验证码服务器鉴权，若不填写一天内只能使用 5 次。
 
 ```yml
-HARUKA_CAPTCHA_TOKEN=harukabot
+BILILIVE_CAPTCHA_TOKEN=bililive
 ```
 
-## HARUKA_BROWSER_UA
+## BILILIVE_BROWSER_UA
 
 默认值：""
 
@@ -146,10 +146,10 @@ HARUKA_CAPTCHA_TOKEN=harukabot
 （如果你不知道这是什么，请忽略）
 
 ```yml
-HARUKA_BROWSER_UA="Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.210 Mobile Safari/537.36"
+BILILIVE_BROWSER_UA="Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.210 Mobile Safari/537.36"
 ```
 
-## HARUKA_DYNAMIC_TIMEOUT
+## BILILIVE_DYNAMIC_TIMEOUT
 
 默认值：10
 
@@ -157,46 +157,46 @@ HARUKA_BROWSER_UA="Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/53
 网络不好一直超时请调大此数值。
 
 ```json
-HARUKA_DYNAMIC_TIMEOUT=30
+BILILIVE_DYNAMIC_TIMEOUT=30
 ```
 
-## HARUKA_DYNAMIC_FONT
+## BILILIVE_DYNAMIC_FONT
 
 默认值："Noto Sans CJK SC"
 
 自定义动态截图使用的字体。只能使用系统中已经安装的字体。
 
 ```json
-HARUKA_DYNAMIC_FONT="Microsoft YaHei"
+BILILIVE_DYNAMIC_FONT="Microsoft YaHei"
 ```
 
-## HARUKA_DYNAMIC_BIG_IMAGE
+## BILILIVE_DYNAMIC_BIG_IMAGE
 
 默认值：False
 
 是否使用大图模式，大图模式下会将动态图片扩展至页宽。
 
 ```json
-HARUKA_DYNAMIC_BIG_IMAGE=True
+BILILIVE_DYNAMIC_BIG_IMAGE=True
 ```
 
-## HARUKA_COMMAND_PREFIX
+## BILILIVE_COMMAND_PREFIX
 
 默认值：""
 
-添加命令前缀，所有 HarukaBot 的命令需要带上前缀才能触发。
+添加命令前缀，所有 BiliLive 的命令需要带上前缀才能触发。
 
 ```json
-# 使用方式：“hb帮助”、“hb关注列表”
-HARUKA_COMMAND_PREFIX="hb"
+# 使用方式：“bl帮助”、“bl关注列表”
+BILILIVE_COMMAND_PREFIX="bl"
 ```
 
-## HARUKA_GUILD_ADMIN_ROLES
+## BILILIVE_GUILD_ADMIN_ROLES
 
 默认值：["超级管理员", "频道主"]
 
 在频道里使用命令的身份组，可以写入多个身份组
 
 ```json
-HARUKA_GUILD_ADMIN_ROLES=["Haruka", "频道主"]
+BILILIVE_GUILD_ADMIN_ROLES=["BiliLive", "频道主"]
 ```

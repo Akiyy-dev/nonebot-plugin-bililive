@@ -12,8 +12,8 @@ body:
   - type: input
     id: hb_version
     attributes:
-      label: HarukaBot 版本
-      description: 可发送「帮助」或使用 pip show haruka-bot 查看
+      label: BiliLive 版本
+      description: 可发送「帮助」或使用 pip show nonebot-plugin-bililive 查看
     validations:
       required: true
 

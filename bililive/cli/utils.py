@@ -10,7 +10,7 @@ env = {
     "ACCESS_TOKEN": "",
     "SUPERUSERS": [],
     "COMMAND_START": [""],
-    "HARUKA_DIR": "./data/",
+    "BILILIVE_DIR": "./data/",
 }
 
 

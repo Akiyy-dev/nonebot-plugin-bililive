@@ -11,9 +11,12 @@ driver.register_adapter(Adapter)
 app = nonebot.get_asgi()
 
 # 删除插件缓存导入，否则 nonebot 导入时会忽略
-for module_name in ("nonebot_plugin_haruka_bot", "haruka_bot"):
+for module_name in (
+    "nonebot_plugin_bililive",
+    "bililive",
+):
     sys.modules.pop(module_name, None)
-nonebot.load_plugin("nonebot_plugin_haruka_bot")
+nonebot.load_plugin("nonebot_plugin_bililive")
 
 # Modify some config / config depends on loaded configs
 #
@@ -32,4 +35,4 @@ logger.add(
 
 
 def run():
-    nonebot.run(app="haruka_bot.cli.bot:app")
+    nonebot.run(app="bililive.cli.bot:app")

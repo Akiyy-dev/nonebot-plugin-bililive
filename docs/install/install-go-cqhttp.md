@@ -1,9 +1,9 @@
 # 安装 go-cqhttp
 
 ::: danger 为什么需要 go-cqhttp？
-HarukaBot 本身只负责处理 B 站信息，需要借助 go-cqhttp 与 QQ 进行通信。
+BiliLive 本身只负责处理 B 站信息，需要借助 go-cqhttp 与 QQ 进行通信。
 
-同时 HarukaBot 仅使用 go-cqhttp 进行测试。使用其他 OneBot 实现（如 [OneBot Kotlin](https://github.com/yyuueexxiinngg/onebot-kotlin)），请**自行承担**可能存在的**兼容性问题**。
+同时 BiliLive 仅使用 go-cqhttp 进行测试。使用其他 OneBot 实现（如 [OneBot Kotlin](https://github.com/yyuueexxiinngg/onebot-kotlin)），请**自行承担**可能存在的**兼容性问题**。
 :::
 
 ::: tip 准备工作
