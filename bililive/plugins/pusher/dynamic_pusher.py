@@ -145,6 +145,11 @@ async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
 
 async def dy_sched():
     """动态推送"""
+    if not await db.wait_until_ready():
+        logger.debug("数据库尚未初始化完成，跳过本轮动态推送")
+        await throttle_dynamic_loop()
+        return
+
     uid = await db.next_uid("dynamic")
     if not uid:
         # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高

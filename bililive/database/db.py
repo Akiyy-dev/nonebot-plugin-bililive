@@ -1,3 +1,4 @@
+import asyncio
 import json
 from pathlib import Path
 
@@ -18,9 +19,12 @@ dynamic_offset = {}
 class DB:
     """数据库交互类，与增删改查无关的部分不应该在这里面实现"""
 
+    _ready = False
+
     @classmethod
     async def init(cls):
         """初始化数据库"""
+        cls._ready = False
         config = {
             "connections": {
                 # "bililive": {
@@ -42,10 +46,27 @@ class DB:
         await Tortoise.generate_schemas()
         await cls.migrate()
         await cls.update_uid_list()
+        cls._ready = True
 
     @classmethod
     async def close(cls):
+        cls._ready = False
         await connections.close_all()
+
+    @classmethod
+    async def wait_until_ready(cls, timeout: float = 30) -> bool:
+        if cls._ready:
+            return True
+
+        waited = 0.0
+        interval = 0.1
+        while waited < timeout:
+            if cls._ready:
+                return True
+            await asyncio.sleep(interval)
+            waited += interval
+
+        return cls._ready
 
     @classmethod
     async def get_user(cls, **kwargs):

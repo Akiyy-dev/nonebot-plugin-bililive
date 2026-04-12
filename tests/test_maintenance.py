@@ -145,9 +145,17 @@ class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
             await DB.init()
 
         self.assertTrue(init_db.await_args.kwargs["_enable_global_fallback"])
+        self.assertTrue(DB._ready)
         generate_schemas.assert_awaited_once()
         migrate.assert_awaited_once()
         update_uid_list.assert_awaited_once()
+
+    async def test_wait_until_ready_returns_false_before_init(self):
+        DB._ready = False
+
+        ready = await DB.wait_until_ready(timeout=0)
+
+        self.assertFalse(ready)
 
     async def test_set_permission_creates_group_when_missing(self):
         with (
