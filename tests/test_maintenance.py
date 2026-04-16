@@ -124,6 +124,18 @@ class PluginEntryTests(unittest.TestCase):
 
         self.assertEqual(Path(get_path("data.sqlite3")), expected)
 
+    def test_pyproject_declares_hyphen_and_module_plugin_entrypoints(self):
+        pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
+
+        self.assertIn(
+            'nonebot-plugin-bililive = "nonebot_plugin_bililive"',
+            pyproject,
+        )
+        self.assertIn(
+            'nonebot_plugin_bililive = "nonebot_plugin_bililive"',
+            pyproject,
+        )
+
 
 class WebDynamicTests(unittest.TestCase):
     def test_parse_web_dynamic_items_extracts_required_fields(self):

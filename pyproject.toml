@@ -42,6 +42,7 @@ Documentation = "https://github.com/Akiyy-dev/nonebot-plugin-bililive#readme"
 Issues = "https://github.com/Akiyy-dev/nonebot-plugin-bililive/issues"
 
 [project.entry-points."nonebot.plugin"]
+nonebot-plugin-bililive = "nonebot_plugin_bililive"
 nonebot_plugin_bililive = "nonebot_plugin_bililive"
 
 [tool.nonebot]
