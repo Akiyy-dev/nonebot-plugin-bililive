@@ -1,16 +1,22 @@
-name: Test & Track
+name: Test
 
 on:
   push:
     branches:
-      - main
+      - master
       - dev
     paths-ignore:
       - README.md
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
+    name: Python ${{ matrix.py_ver }}
     strategy:
       matrix:
         py_ver: ["3.10", "3.11", "3.12"]
@@ -20,23 +26,44 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v6
-        name: Ensure Python Runtime
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python
         with:
           python-version: ${{ matrix.py_ver }}
-          architecture: x64
 
-      - name: Ensure PDM & twine
-        run: python -m pip install pdm twine
-
-      - name: Install Package
-        run: pdm sync -G:all -v
-
-      - name: Test & Report
+      - name: Run unit tests
         run: pdm run test
+
+      - name: Smoke load plugin
+        if: matrix.py_ver == '3.11'
+        shell: bash
+        run: |
+          pdm run python - <<'PY'
+          import asyncio
+          import nonebot
+          import nonebot_plugin_localstore as store
+          from nonebot.adapters.onebot.v11 import Adapter as OneBotV11Adapter
+
+          async def main():
+              nonebot.init(log_level="ERROR")
+              driver = nonebot.get_driver()
+              driver.register_adapter(OneBotV11Adapter)
+              plugin = nonebot.load_plugin("nonebot_plugin_bililive")
+              from bililive.utils import get_data_dir
+
+              assert plugin is not None
+              resolved = get_data_dir()
+              expected = store.get_data_dir("nonebot_plugin_bililive")
+              assert resolved == expected, (resolved, expected)
+              print("resolved_data_dir=", resolved)
+
+          asyncio.run(main())
+          PY
 
       - name: Check Distribution
         if: matrix.py_ver == '3.11'
+        shell: bash
         run: |
+          python -m pip install twine
           pdm build
           python -m twine check dist/*
