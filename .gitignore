@@ -15,6 +15,7 @@ tests/*
 !tests/test_maintenance.py
 migration/
 playground/
+.tmp_plugin_test/
 
 # Editor config
 .vscode

@@ -64,7 +64,7 @@ source = "file"
 path = "bililive/version.py"
 
 [tool.pdm.build]
-includes = ["bililive", "nonebot_plugin_bililive"]
+includes = ["bililive", "nonebot_plugin_bililive", "nonebot-plugin-bililive"]
 
 [tool.pdm.dev-dependencies]
 dev = [

@@ -1,6 +1,7 @@
 import sys
 import tempfile
 import unittest
+import importlib
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -134,6 +135,28 @@ class PluginEntryTests(unittest.TestCase):
         self.assertIn(
             'nonebot_plugin_bililive = "nonebot_plugin_bililive"',
             pyproject,
+        )
+
+    def test_hyphenated_module_alias_can_be_imported(self):
+        with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
+            "nonebot.require", return_value=None
+        ), patch.dict(
+            sys.modules,
+            {
+                "nonebot_plugin_apscheduler": fake_apscheduler,
+                "nonebot_plugin_localstore": fake_localstore,
+            },
+        ):
+            alias_module = importlib.import_module("nonebot-plugin-bililive")
+
+        self.assertEqual(alias_module.__plugin_meta__.name, plugin_entry.__plugin_meta__.name)
+        self.assertEqual(
+            alias_module.__plugin_meta__.homepage,
+            plugin_entry.__plugin_meta__.homepage,
+        )
+        self.assertEqual(
+            alias_module.__plugin_meta__.supported_adapters,
+            plugin_entry.__plugin_meta__.supported_adapters,
         )
 
 
