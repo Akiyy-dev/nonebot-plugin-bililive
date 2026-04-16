@@ -51,6 +51,7 @@ WEB_DYNAMIC_TYPE_MESSAGES = {
     "DYNAMIC_TYPE_ARTICLE": "发布了新专栏",
     "DYNAMIC_TYPE_MUSIC": "发布了新音频",
 }
+DYNAMIC_FETCH_CONCURRENCY = 4
 
 
 async def throttle_dynamic_loop():
@@ -151,22 +152,10 @@ async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
     return await fetch_web_dynamics(), True
 
 
-async def dy_sched():
-    """动态推送"""
-    if not await db.wait_until_ready():
-        logger.debug("数据库尚未初始化完成，跳过本轮动态推送")
-        await throttle_dynamic_loop()
-        return
-
-    uid = await db.next_uid("dynamic")
-    if not uid:
-        # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高
-        await throttle_dynamic_loop()
-        return
+async def process_dynamic_uid(uid: int):
     user = await db.get_user(uid=uid)
     if user is None:
         logger.warning(f"动态推送跳过异常订阅 UID：{uid}")
-        await throttle_dynamic_loop()
         return
     name = user.name
 
@@ -194,7 +183,6 @@ async def dy_sched():
         return
     except GrpcError as e:
         logger.error(f"爬取动态失败：{e.code} {e.msg}")
-        await throttle_dynamic_loop()
         return
     except WebDynamicError as e:
         retry_seconds = (
@@ -208,7 +196,6 @@ async def dy_sched():
             f"动态 Web 接口获取失败，{name}（{uid}）将在 "
             f"{retry_minutes} 分钟后重试：{e.code} {e.msg}"
         )
-        await throttle_dynamic_loop()
         return
 
     dynamic_risk_control_until.pop(uid, None)
@@ -269,6 +256,30 @@ async def dy_sched():
         await db.update_user(uid, name)
 
 
+async def dy_sched():
+    """动态推送"""
+    if not await db.wait_until_ready():
+        logger.debug("数据库尚未初始化完成，跳过本轮动态推送")
+        await throttle_dynamic_loop()
+        return
+
+    uids = await db.get_uid_list("dynamic")
+    if not uids:
+        # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高
+        await throttle_dynamic_loop()
+        return
+
+    logger.debug(f"爬取动态列表，总共 {len(uids)} 人")
+    semaphore = asyncio.Semaphore(DYNAMIC_FETCH_CONCURRENCY)
+
+    async def run_for_uid(uid: int):
+        async with semaphore:
+            await process_dynamic_uid(uid)
+
+    await asyncio.gather(*(run_for_uid(uid) for uid in uids))
+    await throttle_dynamic_loop()
+
+
 def dynamic_lisener(event):
     if hasattr(event, "job_id") and event.job_id != "dynamic_sched":
         return
@@ -290,4 +301,7 @@ else:
         "interval",
         seconds=plugin_config.bililive_dynamic_interval,
         id="dynamic_sched",
+        coalesce=True,
+        max_instances=1,
+        misfire_grace_time=5,
     )

@@ -20,7 +20,20 @@ class DummyDriver:
 
 
 fake_apscheduler = ModuleType("nonebot_plugin_apscheduler")
-fake_apscheduler.scheduler = SimpleNamespace()
+
+
+class DummyScheduler:
+    def add_listener(self, *args, **kwargs):
+        return None
+
+    def add_job(self, *args, **kwargs):
+        return None
+
+    def get_job(self, *args, **kwargs):
+        return None
+
+
+fake_apscheduler.scheduler = DummyScheduler()
 
 
 with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
