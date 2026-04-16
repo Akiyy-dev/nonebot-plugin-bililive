@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:38921bf878ba45192e325cf4122bb4011591dff833f92b10cca006acd8831acc"
+content_hash = "sha256:8295fe5e295d306dad4af1ea8fb12f32404fb19e058eff5dcfb2af5a650adcea"
 
 [[metadata.targets]]
 requires_python = "~=3.10"
@@ -791,6 +791,22 @@ files = [
 ]
 
 [[package]]
+name = "nonebot-plugin-localstore"
+version = "0.7.4"
+requires_python = "<4.0,>=3.9"
+summary = "Local Storage Support for NoneBot2"
+dependencies = [
+    "nonebot2<3.0.0,>=2.3.0",
+    "nonestorage<0.2.0,>=0.1.0",
+    "pydantic!=2.5.0,!=2.5.1,<3.0.0,>=1.10.0",
+    "typing-extensions<5.0.0,>=4.0.0",
+]
+files = [
+    {file = "nonebot_plugin_localstore-0.7.4-py3-none-any.whl", hash = "sha256:3b08030878eadcdd8b9ce3d079da0dc2d0e41dc91f0b2d8cf7fa862a27de9090"},
+    {file = "nonebot_plugin_localstore-0.7.4.tar.gz", hash = "sha256:85ddc13814bfcd484ab311306823651390020bf44f4fb4733b343a58e72723ce"},
+]
+
+[[package]]
 name = "nonebot2"
 version = "2.5.0"
 requires_python = "<4.0,>=3.10"
@@ -825,6 +841,16 @@ dependencies = [
 files = [
     {file = "nonebot2-2.5.0-py3-none-any.whl", hash = "sha256:12380d396a3d5126eeeae0a1aa53af45e9d99b63896e3e2dd6340ee436869e36"},
     {file = "nonebot2-2.5.0.tar.gz", hash = "sha256:5dca27d1d20d86bea823d2c3e0f5118f66af07788bc9d38f3e630bef36dfdf71"},
+]
+
+[[package]]
+name = "nonestorage"
+version = "0.1.0"
+requires_python = "<4.0,>=3.9"
+summary = "Simple library that provides local storage folder detect"
+files = [
+    {file = "nonestorage-0.1.0-py3-none-any.whl", hash = "sha256:35811adf67c680c272bcb71fa9d6c3613cc2d1bb79f5bfc7d83c4412a79537cb"},
+    {file = "nonestorage-0.1.0.tar.gz", hash = "sha256:818232236455c79cabbb69e716f73aa1b9c21d579f1c1fcbdba273b60bac72d9"},
 ]
 
 [[package]]
