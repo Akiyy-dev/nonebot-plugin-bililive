@@ -16,6 +16,7 @@ from .fonts_provider import fill_font
 
 _browser: BrowserContext | None = None
 mobile_js = Path(__file__).parent.joinpath("mobile.js")
+WEB_DYNAMIC_URL = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space"
 
 
 async def init_browser(proxy=plugin_config.bililive_proxy, **kwargs) -> BrowserContext:
@@ -70,6 +71,32 @@ async def get_bilibili_cookies() -> dict[str, str]:
         "https://api.bilibili.com/",
     ])
     return {cookie["name"]: cookie["value"] for cookie in cookies}
+
+
+async def get_user_dynamics_payload_in_browser(uid: int) -> dict:
+    browser = await get_browser()
+    page = await browser.new_page()
+    try:
+        await page.goto(
+            "https://www.bilibili.com/",
+            wait_until="domcontentloaded",
+            timeout=plugin_config.bililive_dynamic_timeout * 1000,
+        )
+        return await page.evaluate(
+            """async ({ url, uid }) => {
+                const response = await fetch(`${url}?host_mid=${uid}`, {
+                    credentials: 'include',
+                    headers: {
+                        accept: 'application/json, text/plain, */*',
+                    },
+                });
+                return await response.json();
+            }""",
+            {"url": WEB_DYNAMIC_URL, "uid": str(uid)},
+        )
+    finally:
+        with contextlib.suppress(Exception):
+            await page.close()
 
 
 async def get_dynamic_screenshot(

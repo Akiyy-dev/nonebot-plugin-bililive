@@ -19,15 +19,22 @@ from nonebot.log import logger
 from ...config import plugin_config
 from ...database import DB as db
 from ...database import dynamic_offset as offset
-from ...libs.dynamic.web import WebDynamicError, get_user_dynamics_web
+from ...libs.dynamic.web import (
+    WebDynamicError,
+    get_user_dynamics_web,
+    parse_web_dynamic_payload,
+)
 from ...utils import (
     get_bilibili_cookies,
     get_dynamic_screenshot,
+    get_user_dynamics_payload_in_browser,
     safe_send,
     scheduler,
 )
 
-RISK_CONTROL_RETRY_SECONDS = 3600
+GRPC_RISK_CONTROL_RETRY_SECONDS = 3600
+WEB_REQUEST_BANNED_RETRY_SECONDS = 300
+WEB_REQUEST_ERROR_RETRY_SECONDS = 600
 dynamic_risk_control_until = {}
 dynamic_web_fallback_until = {}
 WEB_SKIP_DYNAMIC_TYPES = {
@@ -44,6 +51,7 @@ WEB_DYNAMIC_TYPE_MESSAGES = {
     "DYNAMIC_TYPE_ARTICLE": "发布了新专栏",
     "DYNAMIC_TYPE_MUSIC": "发布了新音频",
 }
+DYNAMIC_FETCH_CONCURRENCY = 4
 
 
 async def throttle_dynamic_loop():
@@ -95,21 +103,32 @@ def should_skip_dynamic(dynamic_type, use_web_fallback: bool) -> bool:
 
 
 async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
+    async def fetch_web_dynamics() -> list:
+        try:
+            payload = await get_user_dynamics_payload_in_browser(uid)
+            return parse_web_dynamic_payload(payload)
+        except WebDynamicError as browser_error:
+            logger.debug(
+                f"浏览器上下文动态接口获取失败，尝试直连 Web API：{uid} "
+                f"{browser_error.code} {browser_error.msg}"
+            )
+
+        cookies = await get_bilibili_cookies()
+        if not cookies:
+            raise WebDynamicError(-1, "browser cookies unavailable")
+        return await get_user_dynamics_web(
+            uid,
+            cookies,
+            proxy=plugin_config.bililive_proxy,
+            user_agent=plugin_config.bililive_browser_ua or None,
+            timeout=plugin_config.bililive_dynamic_timeout,
+        )
+
     fallback_until = dynamic_web_fallback_until.get(uid)
     if fallback_until is not None:
         if fallback_until > monotonic():
             logger.debug(f"动态 gRPC 接口仍在风控，继续使用 Web 接口：{uid}")
-            cookies = await get_bilibili_cookies()
-            if not cookies:
-                raise WebDynamicError(-1, "browser cookies unavailable")
-            dynamics = await get_user_dynamics_web(
-                uid,
-                cookies,
-                proxy=plugin_config.bililive_proxy,
-                user_agent=plugin_config.bililive_browser_ua or None,
-                timeout=plugin_config.bililive_dynamic_timeout,
-            )
-            return dynamics, True
+            return await fetch_web_dynamics(), True
         del dynamic_web_fallback_until[uid]
 
     try:
@@ -129,36 +148,14 @@ async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
             f"动态 gRPC 接口触发风控，切换 Web 接口：{uid} "
             f"{e.code} {e.msg}"
         )
-        dynamic_web_fallback_until[uid] = monotonic() + RISK_CONTROL_RETRY_SECONDS
-    cookies = await get_bilibili_cookies()
-    if not cookies:
-        raise WebDynamicError(-1, "browser cookies unavailable")
-    dynamics = await get_user_dynamics_web(
-        uid,
-        cookies,
-        proxy=plugin_config.bililive_proxy,
-        user_agent=plugin_config.bililive_browser_ua or None,
-        timeout=plugin_config.bililive_dynamic_timeout,
-    )
-    return dynamics, True
+        dynamic_web_fallback_until[uid] = monotonic() + GRPC_RISK_CONTROL_RETRY_SECONDS
+    return await fetch_web_dynamics(), True
 
 
-async def dy_sched():
-    """动态推送"""
-    if not await db.wait_until_ready():
-        logger.debug("数据库尚未初始化完成，跳过本轮动态推送")
-        await throttle_dynamic_loop()
-        return
-
-    uid = await db.next_uid("dynamic")
-    if not uid:
-        # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高
-        await throttle_dynamic_loop()
-        return
+async def process_dynamic_uid(uid: int):
     user = await db.get_user(uid=uid)
     if user is None:
         logger.warning(f"动态推送跳过异常订阅 UID：{uid}")
-        await throttle_dynamic_loop()
         return
     name = user.name
 
@@ -186,16 +183,19 @@ async def dy_sched():
         return
     except GrpcError as e:
         logger.error(f"爬取动态失败：{e.code} {e.msg}")
-        await throttle_dynamic_loop()
         return
     except WebDynamicError as e:
-        dynamic_risk_control_until[uid] = monotonic() + RISK_CONTROL_RETRY_SECONDS
-        retry_minutes = RISK_CONTROL_RETRY_SECONDS // 60
+        retry_seconds = (
+            WEB_REQUEST_BANNED_RETRY_SECONDS
+            if e.code == -412
+            else WEB_REQUEST_ERROR_RETRY_SECONDS
+        )
+        dynamic_risk_control_until[uid] = monotonic() + retry_seconds
+        retry_minutes = max(retry_seconds // 60, 1)
         logger.warning(
             f"动态 Web 接口获取失败，{name}（{uid}）将在 "
             f"{retry_minutes} 分钟后重试：{e.code} {e.msg}"
         )
-        await throttle_dynamic_loop()
         return
 
     dynamic_risk_control_until.pop(uid, None)
@@ -256,6 +256,30 @@ async def dy_sched():
         await db.update_user(uid, name)
 
 
+async def dy_sched():
+    """动态推送"""
+    if not await db.wait_until_ready():
+        logger.debug("数据库尚未初始化完成，跳过本轮动态推送")
+        await throttle_dynamic_loop()
+        return
+
+    uids = await db.get_uid_list("dynamic")
+    if not uids:
+        # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高
+        await throttle_dynamic_loop()
+        return
+
+    logger.debug(f"爬取动态列表，总共 {len(uids)} 人")
+    semaphore = asyncio.Semaphore(DYNAMIC_FETCH_CONCURRENCY)
+
+    async def run_for_uid(uid: int):
+        async with semaphore:
+            await process_dynamic_uid(uid)
+
+    await asyncio.gather(*(run_for_uid(uid) for uid in uids))
+    await throttle_dynamic_loop()
+
+
 def dynamic_lisener(event):
     if hasattr(event, "job_id") and event.job_id != "dynamic_sched":
         return
@@ -277,4 +301,7 @@ else:
         "interval",
         seconds=plugin_config.bililive_dynamic_interval,
         id="dynamic_sched",
+        coalesce=True,
+        max_instances=1,
+        misfire_grace_time=5,
     )

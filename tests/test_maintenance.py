@@ -20,7 +20,20 @@ class DummyDriver:
 
 
 fake_apscheduler = ModuleType("nonebot_plugin_apscheduler")
-fake_apscheduler.scheduler = SimpleNamespace()
+
+
+class DummyScheduler:
+    def add_listener(self, *args, **kwargs):
+        return None
+
+    def add_job(self, *args, **kwargs):
+        return None
+
+    def get_job(self, *args, **kwargs):
+        return None
+
+
+fake_apscheduler.scheduler = DummyScheduler()
 
 
 with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
@@ -130,6 +143,18 @@ class WebDynamicTests(unittest.TestCase):
         }
 
         self.assertEqual(web_dynamic.parse_web_dynamic_items(payload), [])
+
+    def test_parse_web_dynamic_payload_raises_for_error_code(self):
+        payload = {
+            "code": -412,
+            "message": "request was banned",
+            "data": None,
+        }
+
+        with self.assertRaises(web_dynamic.WebDynamicError) as context:
+            web_dynamic.parse_web_dynamic_payload(payload)
+
+        self.assertEqual(context.exception.code, -412)
 
 
 class DBPermissionTests(unittest.IsolatedAsyncioTestCase):

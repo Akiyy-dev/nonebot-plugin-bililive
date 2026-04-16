@@ -47,6 +47,16 @@ def parse_web_dynamic_items(payload: dict) -> list[WebDynamicItem]:
     return parsed_items
 
 
+def parse_web_dynamic_payload(payload: dict) -> list[WebDynamicItem]:
+    if payload.get("code") != 0:
+        raise WebDynamicError(
+            payload.get("code"),
+            payload.get("message") or "unknown error",
+            payload.get("data"),
+        )
+    return parse_web_dynamic_items(payload)
+
+
 async def get_user_dynamics_web(
     uid: int,
     cookies: dict[str, str],
@@ -69,11 +79,4 @@ async def get_user_dynamics_web(
         follow_redirects=True,
     ) as client:
         response = await client.get(WEB_DYNAMIC_URL, params={"host_mid": uid})
-    payload = response.json()
-    if payload.get("code") != 0:
-        raise WebDynamicError(
-            payload.get("code"),
-            payload.get("message") or "unknown error",
-            payload.get("data"),
-        )
-    return parse_web_dynamic_items(payload)
+    return parse_web_dynamic_payload(response.json())
