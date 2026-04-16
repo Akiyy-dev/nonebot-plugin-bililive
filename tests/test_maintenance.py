@@ -20,6 +20,7 @@ class DummyDriver:
 
 
 fake_apscheduler = ModuleType("nonebot_plugin_apscheduler")
+fake_localstore = ModuleType("nonebot_plugin_localstore")
 
 
 class DummyScheduler:
@@ -36,9 +37,22 @@ class DummyScheduler:
 fake_apscheduler.scheduler = DummyScheduler()
 
 
+def _get_plugin_data_dir() -> Path:
+    return Path(tempfile.gettempdir()) / "nonebot_plugin_bililive"
+
+
+fake_localstore.get_plugin_data_dir = _get_plugin_data_dir
+
+
 with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     "nonebot.require", return_value=None
-), patch.dict(sys.modules, {"nonebot_plugin_apscheduler": fake_apscheduler}):
+), patch.dict(
+    sys.modules,
+    {
+        "nonebot_plugin_apscheduler": fake_apscheduler,
+        "nonebot_plugin_localstore": fake_localstore,
+    },
+):
     compat = import_module("bililive.compat")
     Config = import_module("bililive.config").Config
     core_version = import_module("bililive.version")
@@ -48,6 +62,7 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     DB = db_module.DB
     models = import_module("bililive.database.models")
     Group = models.Group
+    get_path = import_module("bililive.utils").get_path
 
 
 class ConfigTests(unittest.TestCase):
@@ -103,6 +118,11 @@ class PluginEntryTests(unittest.TestCase):
         )
         self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
         self.assertEqual(plugin_entry.__version__, core_version.__version__)
+
+    def test_default_data_dir_uses_localstore(self):
+        expected = _get_plugin_data_dir() / "data.sqlite3"
+
+        self.assertEqual(Path(get_path("data.sqlite3")), expected)
 
 
 class WebDynamicTests(unittest.TestCase):

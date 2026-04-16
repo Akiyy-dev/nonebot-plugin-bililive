@@ -10,7 +10,7 @@ if isinstance(globals()["__loader__"], PluginLoader):
 __plugin_meta__ = PluginMetadata(
     name="BiliLive",
     description="将 B 站 UP 主的动态和直播信息推送至 QQ",
-    usage="发送 帮助 查看命令列表",
+    usage="发送“帮助”查看命令列表，发送“关注 UID”订阅 UP 主",
     homepage="https://github.com/Akiyy-dev/nonebot-plugin-bililive",
     type="application",
     config=Config,
