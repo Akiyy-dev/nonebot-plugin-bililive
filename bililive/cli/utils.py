@@ -10,7 +10,6 @@ env = {
     "ACCESS_TOKEN": "",
     "SUPERUSERS": [],
     "COMMAND_START": [""],
-    "BILILIVE_DIR": "./data/",
 }
 
 

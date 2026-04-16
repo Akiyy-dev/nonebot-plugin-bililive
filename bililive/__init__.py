@@ -22,7 +22,7 @@ from .version import VERSION, __version__  # noqa: F401
 __plugin_meta__ = PluginMetadata(
     name="BiliLive",
     description="将B站UP主的动态和直播信息推送至QQ",
-    usage="https://github.com/Akiyy-dev/nonebot-plugin-bililive#readme",
+    usage="发送“帮助”查看命令列表，发送“关注 UID”订阅 UP 主",
     homepage="https://github.com/Akiyy-dev/nonebot-plugin-bililive",
     type="application",
     config=Config,

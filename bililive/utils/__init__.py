@@ -30,15 +30,22 @@ from nonebot.rule import Rule
 
 from ..config import plugin_config
 
+require("nonebot_plugin_localstore")
+import nonebot_plugin_localstore as store
+
+PLUGIN_ENTRY_NAME = "nonebot_plugin_bililive"
+
+
+def get_data_dir() -> Path:
+    """获取插件数据目录。"""
+    if plugin_config.bililive_dir:
+        return Path(plugin_config.bililive_dir).resolve()
+    return store.get_data_dir(PLUGIN_ENTRY_NAME)
+
 
 def get_path(*other):
-    """获取数据文件绝对路径"""
-    if plugin_config.bililive_dir:
-        dir_path = Path(plugin_config.bililive_dir).resolve()
-    else:
-        dir_path = Path.cwd().joinpath("data")
-        # dir_path = Path.cwd().joinpath('data', 'bililive')
-    return str(dir_path.joinpath(*other))
+    """获取插件数据文件绝对路径。"""
+    return str(get_data_dir().joinpath(*other))
 
 
 async def handle_uid(
@@ -290,9 +297,7 @@ def on_startup():
         check_proxy()
         install()
         asyncio.get_event_loop().run_until_complete(check_playwright_env())
-        # 创建数据存储目录
-        if not Path(get_path()).is_dir():
-            Path(get_path()).mkdir(parents=True)
+        get_data_dir().mkdir(parents=True, exist_ok=True)
 
 
 def on_command(cmd, *args, **kwargs):

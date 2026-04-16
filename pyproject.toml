@@ -7,11 +7,11 @@ authors = [
 license = {text = "AGPL-3.0-or-later"}
 requires-python = ">=3.10,<4.0"
 readme = "README.md"
-keywords = ["nonebot", "nonebot2", "nonebot-plugin", "qqbot", "bilibili"]
+keywords = ["nonebot", "nonebot2", "nonebot-plugin", "bilibili", "onebot", "onebot-v11"]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "Framework :: Robot Framework",
-    "Framework :: Robot Framework :: Library",
+    "Framework :: AsyncIO",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -23,6 +23,7 @@ dependencies = [
     "httpx>=0.28.1,<1.0",
     "nonebot-adapter-onebot>=2.4.6",
     "nonebot-plugin-apscheduler>=0.5.0",
+    "nonebot-plugin-localstore>=0.7",
     "nonebot2[fastapi]>=2.5.0",
     "playwright>=1.58.0",
     "pydantic>=2.12.5,<3.0",
@@ -41,7 +42,6 @@ Documentation = "https://github.com/Akiyy-dev/nonebot-plugin-bililive#readme"
 Issues = "https://github.com/Akiyy-dev/nonebot-plugin-bililive/issues"
 
 [project.entry-points."nonebot.plugin"]
-nonebot-plugin-bililive = "nonebot_plugin_bililive"
 nonebot_plugin_bililive = "nonebot_plugin_bililive"
 
 [tool.nonebot]

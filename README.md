@@ -24,6 +24,8 @@ _✨ 将 B 站 UP 主动态与直播推送到 QQ 的 NoneBot2 插件 ✨_
 
 BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直播与动态消息推送到 QQ 群或私聊场景。
 
+目前支持的适配器：OneBot V11。
+
 ### 特性
 
 - 支持按 UP 主维度分别开启或关闭动态、直播推送。
@@ -45,16 +47,20 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 
 <details>
 <summary>使用包管理器安装</summary>
-在 nonebot2 项目的插件目录下, 打开命令行, 进入虚拟环境, 输入相应的安装命令
+
+在 NoneBot2 项目虚拟环境中安装：
 
     pip install nonebot-plugin-bililive
 
 
-打开 nonebot2 项目根目录下的 `pyproject.toml` 文件, 在 `[tool.nonebot.plugins]` 部分追加写入
+然后在 NoneBot2 项目根目录的 pyproject.toml 中加载插件：
 
-    nonebot-plugin-bililive = ["nonebot-plugin-bililive"]
+	[tool.nonebot]
+	plugins = ["nonebot_plugin_bililive"]
 
 </details>
+
+首次使用动态截图功能时，插件会自动检查并安装 Chromium；如果需要自定义数据目录，可通过 BILILIVE_DIR 覆盖默认存储位置。未配置时，插件会使用 nonebot-plugin-localstore 提供的插件数据目录。
 
 ## ⚙️ 配置
 
@@ -62,7 +68,7 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 
 | 配置项 | 必填 | 默认值 | 说明 |
 |:-----:|:----:|:----:|:----|
-| BILILIVE_DIR | 否 | data | 数据目录 |
+| BILILIVE_DIR | 否 | 由 nonebot-plugin-localstore 自动分配 | 插件数据目录，包含数据库、浏览器数据与动态偏移缓存 |
 | BILILIVE_TO_ME | 否 | true | 是否需要 @机器人 或命令前缀触发 |
 | BILILIVE_PROXY | 否 | 无 | HTTP 代理地址，用于 B 站请求和 Playwright 下载 |
 | BILILIVE_INTERVAL | 否 | 10 | 默认轮询间隔，单位秒 |
@@ -102,7 +108,7 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 
 ### 效果图
 
-![demo](/docs/.vuepress/public/demo.png)
+![demo](./docs/.vuepress/public/demo.png)
 
 ## 开发
 
