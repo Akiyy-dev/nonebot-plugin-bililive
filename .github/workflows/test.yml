@@ -41,7 +41,6 @@ jobs:
           pdm run python - <<'PY'
           import asyncio
           import nonebot
-          import nonebot_plugin_localstore as store
           from nonebot.adapters.onebot.v11 import Adapter as OneBotV11Adapter
 
           async def main():
@@ -49,6 +48,7 @@ jobs:
               driver = nonebot.get_driver()
               driver.register_adapter(OneBotV11Adapter)
               plugin = nonebot.load_plugin("nonebot_plugin_bililive")
+              import nonebot_plugin_localstore as store
               from bililive.utils import get_data_dir
 
               assert plugin is not None
