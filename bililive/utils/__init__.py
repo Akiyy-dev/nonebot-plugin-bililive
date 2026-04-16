@@ -33,12 +33,14 @@ from ..config import plugin_config
 require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store
 
+PLUGIN_ENTRY_NAME = "nonebot_plugin_bililive"
+
 
 def get_data_dir() -> Path:
     """获取插件数据目录。"""
     if plugin_config.bililive_dir:
         return Path(plugin_config.bililive_dir).resolve()
-    return store.get_plugin_data_dir()
+    return store.get_data_dir(PLUGIN_ENTRY_NAME)
 
 
 def get_path(*other):

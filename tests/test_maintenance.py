@@ -37,11 +37,11 @@ class DummyScheduler:
 fake_apscheduler.scheduler = DummyScheduler()
 
 
-def _get_plugin_data_dir() -> Path:
-    return Path(tempfile.gettempdir()) / "nonebot_plugin_bililive"
+def _get_data_dir(plugin_name: str | None) -> Path:
+    return Path(tempfile.gettempdir()) / (plugin_name or "nonebot2")
 
 
-fake_localstore.get_plugin_data_dir = _get_plugin_data_dir
+fake_localstore.get_data_dir = _get_data_dir
 
 
 with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
@@ -120,7 +120,7 @@ class PluginEntryTests(unittest.TestCase):
         self.assertEqual(plugin_entry.__version__, core_version.__version__)
 
     def test_default_data_dir_uses_localstore(self):
-        expected = _get_plugin_data_dir() / "data.sqlite3"
+        expected = _get_data_dir("nonebot_plugin_bililive") / "data.sqlite3"
 
         self.assertEqual(Path(get_path("data.sqlite3")), expected)
 
