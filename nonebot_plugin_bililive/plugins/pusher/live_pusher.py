@@ -1,12 +1,12 @@
 import time
 
-from bilireq.live import get_rooms_info_by_uids
+from nonebot import logger
 from nonebot.adapters.onebot.v11.message import MessageSegment
-from nonebot.log import logger
 
+from ...bilibili_api import get_live_rooms_info_by_uids
 from ...config import plugin_config
 from ...database import DB as db
-from ...utils import PROXIES, calc_time_total, safe_send, scheduler
+from ...utils import calc_time_total, safe_send, scheduler
 
 status = {}
 live_time = {}
@@ -32,7 +32,7 @@ async def live_sched():
     if not uids:  # 订阅为空
         return
     logger.debug(f"爬取直播列表，目前开播{sum(status.values())}人，总共{len(uids)}人")
-    res = await get_rooms_info_by_uids(uids, reqtype="web", proxies=PROXIES)
+    res = await get_live_rooms_info_by_uids(uids, proxy=plugin_config.bililive_proxy)
     if not res:
         return
     for uid, info in res.items():

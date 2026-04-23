@@ -3,14 +3,12 @@ import contextlib
 import datetime
 import re
 import sys
-from pathlib import Path
 from typing import Annotated
 
 import httpx
 import nonebot
-from bilireq.utils import get
+from nonebot import logger, require
 from nonebot import on_command as _on_command
-from nonebot import require
 from nonebot.adapters.onebot.v11 import (
     ActionFailed,
     Bot,
@@ -22,7 +20,6 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent, PrivateMessageEvent
 from nonebot.adapters.onebot.v11.permission import GROUP_ADMIN, GROUP_OWNER
 from nonebot.exception import FinishedException
-from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.params import ArgPlainText, CommandArg, RawCommand
 from nonebot.permission import SUPERUSER
@@ -33,14 +30,10 @@ from ..config import plugin_config
 require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store
 
-PLUGIN_ENTRY_NAME = "nonebot_plugin_bililive"
 
-
-def get_data_dir() -> Path:
+def get_data_dir():
     """获取插件数据目录。"""
-    if plugin_config.bililive_dir:
-        return Path(plugin_config.bililive_dir).resolve()
-    return store.get_data_dir(PLUGIN_ENTRY_NAME)
+    return store.get_plugin_data_dir()
 
 
 def get_path(*other):
@@ -99,9 +92,16 @@ async def search_user(keyword: str):
     """
     url = "https://api.bilibili.com/x/web-interface/search/type"
     data = {"keyword": keyword, "search_type": "bili_user"}
-    resp = await get(url, params=data)
-    logger.debug(resp)
-    return resp
+    async with httpx.AsyncClient(
+        proxy=plugin_config.bililive_proxy,
+        headers={"User-Agent": "Mozilla/5.0", "Referer": "https://www.bilibili.com/"},
+        timeout=20,
+        follow_redirects=True,
+    ) as client:
+        response = await client.get(url, params=data)
+    payload = response.json()
+    logger.debug(payload)
+    return payload.get("data")
 
 
 async def get_user_name_by_uid(uid: int | str) -> str | None:
@@ -303,8 +303,6 @@ def on_startup():
 def on_command(cmd, *args, **kwargs):
     return _on_command(plugin_config.bililive_command_prefix + cmd, *args, **kwargs)
 
-
-PROXIES = {"all://": plugin_config.bililive_proxy}
 
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler  # noqa

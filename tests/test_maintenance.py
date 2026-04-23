@@ -1,13 +1,10 @@
 import sys
 import tempfile
 import unittest
-import importlib
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, patch
-
-import httpx
 
 
 class DummyDriver:
@@ -38,32 +35,31 @@ class DummyScheduler:
 fake_apscheduler.scheduler = DummyScheduler()
 
 
-def _get_data_dir(plugin_name: str | None) -> Path:
-    return Path(tempfile.gettempdir()) / (plugin_name or "nonebot2")
+def _get_plugin_data_dir() -> Path:
+    return Path(tempfile.gettempdir()) / "nonebot_plugin_bililive"
 
 
-fake_localstore.get_data_dir = _get_data_dir
+fake_localstore.get_plugin_data_dir = _get_plugin_data_dir
 
 
 with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
-    "nonebot.require", return_value=None
-), patch.dict(
+    "nonebot.get_plugin_config", side_effect=lambda cls: cls()
+), patch("nonebot.require", return_value=None), patch.dict(
     sys.modules,
     {
         "nonebot_plugin_apscheduler": fake_apscheduler,
         "nonebot_plugin_localstore": fake_localstore,
     },
 ):
-    compat = import_module("bililive.compat")
-    Config = import_module("bililive.config").Config
-    core_version = import_module("bililive.version")
-    db_module = import_module("bililive.database.db")
-    web_dynamic = import_module("bililive.libs.dynamic.web")
+    Config = import_module("nonebot_plugin_bililive.config").Config
+    core_version = import_module("nonebot_plugin_bililive.version")
+    db_module = import_module("nonebot_plugin_bililive.database.db")
+    web_dynamic = import_module("nonebot_plugin_bililive.libs.dynamic.web")
     plugin_entry = import_module("nonebot_plugin_bililive")
     DB = db_module.DB
-    models = import_module("bililive.database.models")
+    models = import_module("nonebot_plugin_bililive.database.models")
     Group = models.Group
-    get_path = import_module("bililive.utils").get_path
+    get_path = import_module("nonebot_plugin_bililive.utils").get_path
 
 
 class ConfigTests(unittest.TestCase):
@@ -84,8 +80,8 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.bililive_screenshot_style, "mobile")
 
     def test_legacy_haruka_config_names_are_still_supported(self):
-        config = Config.model_validate(
-            {
+        config = Config(
+            **{
                 "haruka_interval": -1,
                 "haruka_live_interval": 12,
                 "haruka_command_prefix": "hb",
@@ -97,67 +93,32 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.bililive_command_prefix, "hb")
 
 
-class CompatTests(unittest.TestCase):
-    def test_httpx_compat_adds_legacy_proxy_alias(self):
-        compat.patch_httpx_compat()
-
-        self.assertTrue(hasattr(httpx._types, "ProxiesTypes"))
-
-    def test_httpx_compat_accepts_legacy_proxies_keyword(self):
-        compat.patch_httpx_compat()
-
-        client = httpx.AsyncClient(proxies={"all://": None})
-        self.assertIsInstance(client, httpx.AsyncClient)
-        self.addCleanup(lambda: __import__("asyncio").run(client.aclose()))
-
-
 class PluginEntryTests(unittest.TestCase):
-    def test_wrapper_entry_exposes_plugin_metadata(self):
+    def test_plugin_entry_exposes_plugin_metadata(self):
         self.assertEqual(
             plugin_entry.__plugin_meta__.homepage,
             "https://github.com/Akiyy-dev/nonebot-plugin-bililive",
         )
         self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
+        self.assertEqual(plugin_entry.__plugin_meta__.extra["author"], "Akiyy_Lab")
         self.assertEqual(plugin_entry.__version__, core_version.__version__)
 
     def test_default_data_dir_uses_localstore(self):
-        expected = _get_data_dir("nonebot_plugin_bililive") / "data.sqlite3"
+        expected = _get_plugin_data_dir() / "data.sqlite3"
 
         self.assertEqual(Path(get_path("data.sqlite3")), expected)
 
-    def test_pyproject_declares_hyphen_and_module_plugin_entrypoints(self):
+    def test_pyproject_uses_direct_plugin_entrypoint(self):
         pyproject = Path("pyproject.toml").read_text(encoding="utf-8")
 
-        self.assertIn(
-            'nonebot-plugin-bililive = "nonebot_plugin_bililive"',
-            pyproject,
-        )
         self.assertIn(
             'nonebot_plugin_bililive = "nonebot_plugin_bililive"',
             pyproject,
         )
-
-    def test_hyphenated_module_alias_can_be_imported(self):
-        with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
-            "nonebot.require", return_value=None
-        ), patch.dict(
-            sys.modules,
-            {
-                "nonebot_plugin_apscheduler": fake_apscheduler,
-                "nonebot_plugin_localstore": fake_localstore,
-            },
-        ):
-            alias_module = importlib.import_module("nonebot-plugin-bililive")
-
-        self.assertEqual(alias_module.__plugin_meta__.name, plugin_entry.__plugin_meta__.name)
-        self.assertEqual(
-            alias_module.__plugin_meta__.homepage,
-            plugin_entry.__plugin_meta__.homepage,
-        )
-        self.assertEqual(
-            alias_module.__plugin_meta__.supported_adapters,
-            plugin_entry.__plugin_meta__.supported_adapters,
-        )
+        self.assertNotIn('nonebot-plugin-bililive = "nonebot_plugin_bililive"', pyproject)
+        self.assertIn('bililive = "nonebot_plugin_bililive.__main__:main"', pyproject)
+        self.assertNotIn('nonebot2[fastapi]>=', pyproject)
+        self.assertNotIn('bilireq>=', pyproject)
 
 
 class WebDynamicTests(unittest.TestCase):

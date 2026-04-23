@@ -13,28 +13,11 @@ SUPERUSERS=[]
 NICKNAME=[]
 COMMAND_START=[""]
 COMMAND_SEP=["."]
-BILILIVE_DIR="./data/"
 BILILIVE_TO_ME=false
 BILILIVE_GUILD_ADMIN_ROLES=["Haruka", "频道主"]
 ```
 
 :::
-
-## BILILIVE_DIR
-
-默认值：None
-
-修改数据文件默认存储路径，默认存在 `nonebot-plugin-bililive` 包安装目录下。
-
-**不推荐**使用默认存储位置，这会使得数据文件迁移与管理异常麻烦。**推荐**设置 `BILILIVE_DIR="./data/"`，即当前目录的 `data` 文件夹下。
-
-::: tip 提示
-如果使用 CLI 部署，会**自动**在 `.env.prod` 中添加 `BILILIVE_DIR="./data/"`。
-:::
-
-```json
-BILILIVE_DIR="./data/"
-```
 
 ## BILILIVE_TO_ME
 

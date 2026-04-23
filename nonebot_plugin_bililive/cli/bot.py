@@ -2,8 +2,9 @@ import sys
 from os import path
 
 import nonebot
+from nonebot import logger
 from nonebot.adapters.onebot.v11 import Adapter
-from nonebot.log import default_format, logger
+from nonebot.log import default_format
 
 nonebot.init()
 driver = nonebot.get_driver()
@@ -35,4 +36,4 @@ logger.add(
 
 
 def run():
-    nonebot.run(app="bililive.cli.bot:app")
+    nonebot.run(app="nonebot_plugin_bililive.cli.bot:app")

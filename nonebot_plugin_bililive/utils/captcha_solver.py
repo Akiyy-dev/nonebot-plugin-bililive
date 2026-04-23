@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
-from loguru import logger
+from nonebot import logger
 from playwright._impl._api_structures import Position
 from playwright.async_api import Page, Response
 

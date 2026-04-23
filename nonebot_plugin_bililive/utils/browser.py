@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from nonebot.log import logger
+from nonebot import logger
 from playwright.__main__ import main
 from playwright.async_api import BrowserContext, Page, async_playwright
 

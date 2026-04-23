@@ -8,13 +8,8 @@ from apscheduler.events import (
     EVENT_JOB_MISSED,
     EVENT_SCHEDULER_STARTED,
 )
-from bilireq.exceptions import GrpcError
-from bilireq.grpc.dynamic import grpc_get_user_dynamics
-from bilireq.grpc.protos.bilibili.app.dynamic.v2.dynamic_pb2 import DynamicType
-from grpc import StatusCode
-from grpc.aio import AioRpcError
+from nonebot import logger
 from nonebot.adapters.onebot.v11.message import MessageSegment
-from nonebot.log import logger
 
 from ...config import plugin_config
 from ...database import DB as db
@@ -32,11 +27,9 @@ from ...utils import (
     scheduler,
 )
 
-GRPC_RISK_CONTROL_RETRY_SECONDS = 3600
 WEB_REQUEST_BANNED_RETRY_SECONDS = 300
 WEB_REQUEST_ERROR_RETRY_SECONDS = 600
 dynamic_risk_control_until = {}
-dynamic_web_fallback_until = {}
 WEB_SKIP_DYNAMIC_TYPES = {
     "DYNAMIC_TYPE_LIVE_RCMD",
     "DYNAMIC_TYPE_LIVE",
@@ -60,96 +53,48 @@ async def throttle_dynamic_loop():
 
 
 def get_dynamic_id(dynamic, use_web_fallback: bool) -> int:
-    if use_web_fallback:
-        return dynamic.dynamic_id
-    return int(dynamic.extend.dyn_id_str)
+    return dynamic.dynamic_id
 
 
 def get_dynamic_type(dynamic, use_web_fallback: bool):
-    if use_web_fallback:
-        return dynamic.dynamic_type
-    return dynamic.card_type
+    return dynamic.dynamic_type
 
 
 def get_dynamic_author_name(dynamic, use_web_fallback: bool) -> str:
-    if use_web_fallback:
-        return dynamic.author_name
-    return dynamic.modules[0].module_author.author.name
+    return dynamic.author_name
 
 
 def get_dynamic_type_message(dynamic_type, use_web_fallback: bool) -> str:
-    if use_web_fallback:
-        return WEB_DYNAMIC_TYPE_MESSAGES.get(dynamic_type, "发布了新动态")
-    return {
-        0: "发布了新动态",
-        DynamicType.forward: "转发了一条动态",
-        DynamicType.word: "发布了新文字动态",
-        DynamicType.draw: "发布了新图文动态",
-        DynamicType.av: "发布了新投稿",
-        DynamicType.article: "发布了新专栏",
-        DynamicType.music: "发布了新音频",
-    }.get(dynamic_type, "发布了新动态")
+    return WEB_DYNAMIC_TYPE_MESSAGES.get(dynamic_type, "发布了新动态")
 
 
 def should_skip_dynamic(dynamic_type, use_web_fallback: bool) -> bool:
-    if use_web_fallback:
-        return dynamic_type in WEB_SKIP_DYNAMIC_TYPES
-    return dynamic_type in [
-        DynamicType.live_rcmd,
-        DynamicType.live,
-        DynamicType.ad,
-        DynamicType.banner,
-    ]
+    return dynamic_type in WEB_SKIP_DYNAMIC_TYPES
 
 
 async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
-    async def fetch_web_dynamics() -> list:
-        try:
-            payload = await get_user_dynamics_payload_in_browser(uid)
-            return parse_web_dynamic_payload(payload)
-        except WebDynamicError as browser_error:
-            logger.debug(
-                f"浏览器上下文动态接口获取失败，尝试直连 Web API：{uid} "
-                f"{browser_error.code} {browser_error.msg}"
-            )
+    try:
+        payload = await get_user_dynamics_payload_in_browser(uid)
+        return parse_web_dynamic_payload(payload), True
+    except WebDynamicError as browser_error:
+        logger.debug(
+            f"浏览器上下文动态接口获取失败，尝试直连 Web API：{uid} "
+            f"{browser_error.code} {browser_error.msg}"
+        )
 
-        cookies = await get_bilibili_cookies()
-        if not cookies:
-            raise WebDynamicError(-1, "browser cookies unavailable")
-        return await get_user_dynamics_web(
+    cookies = await get_bilibili_cookies()
+    if not cookies:
+        raise WebDynamicError(-1, "browser cookies unavailable")
+    return (
+        await get_user_dynamics_web(
             uid,
             cookies,
             proxy=plugin_config.bililive_proxy,
             user_agent=plugin_config.bililive_browser_ua or None,
             timeout=plugin_config.bililive_dynamic_timeout,
-        )
-
-    fallback_until = dynamic_web_fallback_until.get(uid)
-    if fallback_until is not None:
-        if fallback_until > monotonic():
-            logger.debug(f"动态 gRPC 接口仍在风控，继续使用 Web 接口：{uid}")
-            return await fetch_web_dynamics(), True
-        del dynamic_web_fallback_until[uid]
-
-    try:
-        dynamics = (
-            await grpc_get_user_dynamics(
-                uid,
-                timeout=plugin_config.bililive_dynamic_timeout,
-                proxy=plugin_config.bililive_proxy,
-            )
-        ).list
-        dynamic_web_fallback_until.pop(uid, None)
-        return list(dynamics), False
-    except GrpcError as e:
-        if e.code != -352:
-            raise
-        logger.warning(
-            f"动态 gRPC 接口触发风控，切换 Web 接口：{uid} "
-            f"{e.code} {e.msg}"
-        )
-        dynamic_web_fallback_until[uid] = monotonic() + GRPC_RISK_CONTROL_RETRY_SECONDS
-    return await fetch_web_dynamics(), True
+        ),
+        True,
+    )
 
 
 async def process_dynamic_uid(uid: int):
@@ -173,16 +118,6 @@ async def process_dynamic_uid(uid: int):
         dynamics, use_web_fallback = await get_user_dynamics_with_web_fallback(uid)
     except asyncio.CancelledError:
         logger.debug(f"动态轮询任务已取消：{name}（{uid}）")
-        return
-    except AioRpcError as e:
-        if e.code() == StatusCode.DEADLINE_EXCEEDED:
-            logger.error(f"爬取动态超时，将在下个轮询中重试：{e.code()} {e.details()}")
-        else:
-            logger.error(f"爬取动态失败：{e.code()} {e.details()}")
-        await throttle_dynamic_loop()
-        return
-    except GrpcError as e:
-        logger.error(f"爬取动态失败：{e.code} {e.msg}")
         return
     except WebDynamicError as e:
         retry_seconds = (

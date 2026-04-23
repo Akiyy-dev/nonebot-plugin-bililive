@@ -23,7 +23,7 @@ features:
     details: 可以指定群内仅管理以上才能操作机器人，杜绝群员捣乱。
   - title: '@全体成员'
     details: 推送内容支持@全体成员。还能同时连接多个 QQ 号分群推送，保证@次数充足。
-footer: AGPL-3.0 Licensed | Copyright © 2021-present SK-415
+footer: AGPL-3.0 Licensed | Maintained by Akiyy_Lab
 ---
 
 ![demo](/demo.png)
