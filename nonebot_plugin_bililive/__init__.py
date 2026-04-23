@@ -1,8 +1,12 @@
+from nonebot import require
 from nonebot.plugin import PluginMetadata
 from nonebot.plugin.manager import PluginLoader
 
 from .config import Config, plugin_config
 from .version import VERSION, __version__
+
+require("nonebot_plugin_localstore")
+require("nonebot_plugin_apscheduler")
 
 
 def bootstrap_plugin(force: bool = False):
