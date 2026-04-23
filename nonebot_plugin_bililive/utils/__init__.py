@@ -7,9 +7,8 @@ from typing import Annotated
 
 import httpx
 import nonebot
-from nonebot import logger
+from nonebot import logger, require
 from nonebot import on_command as _on_command
-from nonebot import require
 from nonebot.adapters.onebot.v11 import (
     ActionFailed,
     Bot,
