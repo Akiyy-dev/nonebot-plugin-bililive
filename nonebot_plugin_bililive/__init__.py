@@ -4,6 +4,7 @@ from nonebot.plugin.manager import PluginLoader
 from .config import Config, plugin_config
 from .version import VERSION, __version__
 
+
 def bootstrap_plugin(force: bool = False):
     if force or isinstance(globals()["__loader__"], PluginLoader):
         from .utils import on_startup
@@ -11,6 +12,7 @@ def bootstrap_plugin(force: bool = False):
         on_startup()
 
         from . import plugins  # noqa: F401
+
 
 bootstrap_plugin()
 

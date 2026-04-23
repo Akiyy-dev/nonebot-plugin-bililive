@@ -3,7 +3,7 @@ name: Ruff Lint
 on:
   push:
     branches:
-      - main
+      - master
       - dev
   pull_request:
 
