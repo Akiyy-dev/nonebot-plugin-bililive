@@ -25,7 +25,7 @@ __plugin_meta__ = PluginMetadata(
     config=Config,
     supported_adapters={"~onebot.v11"},
     extra={
-        "author": "SK-415",
+        "author": "Akiyy_Lab",
         "version": __version__,
         "priority": 1,
     },

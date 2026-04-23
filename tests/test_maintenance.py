@@ -100,6 +100,7 @@ class PluginEntryTests(unittest.TestCase):
             "https://github.com/Akiyy-dev/nonebot-plugin-bililive",
         )
         self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
+        self.assertEqual(plugin_entry.__plugin_meta__.extra["author"], "Akiyy_Lab")
         self.assertEqual(plugin_entry.__version__, core_version.__version__)
 
     def test_default_data_dir_uses_localstore(self):
