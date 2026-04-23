@@ -7,7 +7,8 @@ from typing import Annotated
 
 import httpx
 import nonebot
-from nonebot import logger, require
+import nonebot_plugin_localstore as store
+from nonebot import logger
 from nonebot import on_command as _on_command
 from nonebot.adapters.onebot.v11 import (
     ActionFailed,
@@ -26,9 +27,6 @@ from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule
 
 from ..config import plugin_config
-
-require("nonebot_plugin_localstore")
-import nonebot_plugin_localstore as store
 
 
 def get_data_dir():
@@ -303,8 +301,6 @@ def on_startup():
 def on_command(cmd, *args, **kwargs):
     return _on_command(plugin_config.bililive_command_prefix + cmd, *args, **kwargs)
 
-
-require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler  # noqa
 
 from .browser import (  # noqa
