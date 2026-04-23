@@ -73,7 +73,7 @@ jobs:
           from nonebot.adapters.onebot.v11 import Adapter as OneBotV11Adapter
 
           async def main():
-              nonebot.init(log_level="ERROR")
+              nonebot.init(driver="~none", log_level="ERROR")
               driver = nonebot.get_driver()
               driver.register_adapter(OneBotV11Adapter)
               plugin = nonebot.load_plugin("nonebot_plugin_bililive")
