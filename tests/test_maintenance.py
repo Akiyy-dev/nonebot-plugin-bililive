@@ -122,7 +122,10 @@ class PluginEntryTests(unittest.TestCase):
             pyproject,
         )
         self.assertIn('bililive = "nonebot_plugin_bililive.__main__:main"', pyproject)
-        self.assertIn('includes = ["nonebot_plugin_bililive", "nonebot-plugin-bililive"]', pyproject)
+        self.assertIn(
+            'includes = ["nonebot_plugin_bililive", "nonebot-plugin-bililive"]',
+            pyproject,
+        )
         self.assertNotIn('nonebot2[fastapi]>=', pyproject)
         self.assertNotIn('bilireq>=', pyproject)
 

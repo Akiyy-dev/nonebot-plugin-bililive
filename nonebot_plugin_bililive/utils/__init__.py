@@ -7,7 +7,8 @@ from typing import Annotated
 
 import httpx
 import nonebot
-from nonebot import logger, require
+import nonebot_plugin_localstore as store
+from nonebot import logger
 from nonebot import on_command as _on_command
 from nonebot.adapters.onebot.v11 import (
     ActionFailed,
@@ -26,8 +27,6 @@ from nonebot.permission import SUPERUSER
 from nonebot.rule import Rule
 
 from ..config import plugin_config
-
-import nonebot_plugin_localstore as store
 
 
 def get_data_dir():
