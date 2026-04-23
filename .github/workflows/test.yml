@@ -49,7 +49,7 @@ jobs:
               driver.register_adapter(OneBotV11Adapter)
               plugin = nonebot.load_plugin("nonebot_plugin_bililive")
               import nonebot_plugin_localstore as store
-              from bililive.utils import get_data_dir
+              from nonebot_plugin_bililive.utils import get_data_dir
 
               assert plugin is not None
               resolved = get_data_dir()
