@@ -27,7 +27,6 @@ from nonebot.rule import Rule
 
 from ..config import plugin_config
 
-require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store
 
 
@@ -303,8 +302,6 @@ def on_startup():
 def on_command(cmd, *args, **kwargs):
     return _on_command(plugin_config.bililive_command_prefix + cmd, *args, **kwargs)
 
-
-require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler  # noqa
 
 from .browser import (  # noqa
