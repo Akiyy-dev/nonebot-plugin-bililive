@@ -60,7 +60,7 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 
 </details>
 
-首次使用动态截图功能时，插件会自动检查并安装 Chromium；如果需要自定义数据目录，可通过 BILILIVE_DIR 覆盖默认存储位置。未配置时，插件会使用 nonebot-plugin-localstore 提供的插件数据目录。
+首次使用动态截图功能时，插件会自动检查并安装 Chromium。插件数据目录统一由 nonebot-plugin-localstore 提供，无需再单独配置数据目录。
 
 ## ⚙️ 配置
 
@@ -68,7 +68,6 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 
 | 配置项 | 必填 | 默认值 | 说明 |
 |:-----:|:----:|:----:|:----|
-| BILILIVE_DIR | 否 | 由 nonebot-plugin-localstore 自动分配 | 插件数据目录，包含数据库、浏览器数据与动态偏移缓存 |
 | BILILIVE_TO_ME | 否 | true | 是否需要 @机器人 或命令前缀触发 |
 | BILILIVE_PROXY | 否 | 无 | HTTP 代理地址，用于 B 站请求和 Playwright 下载 |
 | BILILIVE_INTERVAL | 否 | 10 | 默认轮询间隔，单位秒 |
@@ -84,7 +83,7 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 | BILILIVE_DYNAMIC_BIG_IMAGE | 否 | false | 是否优先展示大图 |
 | BILILIVE_COMMAND_PREFIX | 否 | 空字符串 | 命令额外前缀 |
 
-动态抓取默认优先使用 gRPC 接口；当部分 UID 命中 B 站风控时，插件会自动回退到 Playwright 持久化浏览器中的 cookies 请求网页动态接口。通常不需要额外配置 Cookie 登录；如果某些 UID 仍持续抓取失败，建议在插件使用的浏览器数据目录中登录一个常用的 B 站账号，以提高动态抓取成功率。
+动态抓取使用 Playwright 持久化浏览器中的 cookies 请求网页动态接口。通常不需要额外配置 Cookie 登录；如果某些 UID 持续抓取失败，建议在插件使用的浏览器数据目录中登录一个常用的 B 站账号，以提高动态抓取成功率。
 
 ## 🎉 使用
 

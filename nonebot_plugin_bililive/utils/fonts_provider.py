@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from loguru import logger
+from nonebot import logger
 from playwright.async_api import Request, Route
 from yarl import URL
 

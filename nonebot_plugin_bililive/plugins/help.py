@@ -13,7 +13,7 @@ async def _():
         for matcher in matchers_list:
             if (
                 matcher.plugin_name
-                and matcher.plugin_name.startswith("bililive")
+                and matcher.plugin_name.startswith("nonebot_plugin_bililive")
                 and matcher.__doc__
             ):
                 message += matcher.__doc__ + "\n"

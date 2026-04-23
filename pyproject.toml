@@ -2,7 +2,7 @@
 name = "nonebot-plugin-bililive"
 description = "Push bilibili dynamics and live notifications to QQ with NoneBot2."
 authors = [
-    {name = "SK-415", email = "2967923486@qq.com"},
+    {name = "Akiyy_Lab", email = "2806578374@qq.com"},
 ]
 license = {text = "AGPL-3.0-or-later"}
 requires-python = ">=3.10,<4.0"
@@ -24,12 +24,11 @@ dependencies = [
     "nonebot-adapter-onebot>=2.4.6",
     "nonebot-plugin-apscheduler>=0.5.0",
     "nonebot-plugin-localstore>=0.7",
-    "nonebot2[fastapi]>=2.5.0",
+    "nonebot2>=2.5.0",
     "playwright>=1.58.0",
-    "pydantic>=2.12.5,<3.0",
+    "pydantic>=1.10.0,<3.0",
     "python-dotenv>=1.2.2",
     "tortoise-orm[asyncpg]>=0.19.3",
-    "bilireq>=0.2.13",
     "packaging>=26.0",
     "msvc-runtime>=14.34.31931; sys_platform == \"win32\"",
 ]
@@ -42,7 +41,6 @@ Documentation = "https://github.com/Akiyy-dev/nonebot-plugin-bililive#readme"
 Issues = "https://github.com/Akiyy-dev/nonebot-plugin-bililive/issues"
 
 [project.entry-points."nonebot.plugin"]
-nonebot-plugin-bililive = "nonebot_plugin_bililive"
 nonebot_plugin_bililive = "nonebot_plugin_bililive"
 
 [tool.nonebot]
@@ -54,17 +52,17 @@ plugin_dirs = []
 builtin_plugins = []
 
 [project.scripts]
-bililive = "bililive.__main__:main"
+bililive = "nonebot_plugin_bililive.__main__:main"
 
 [tool.pdm]
 distribution = true
 
 [tool.pdm.version]
 source = "file"
-path = "bililive/version.py"
+path = "nonebot_plugin_bililive/version.py"
 
 [tool.pdm.build]
-includes = ["bililive", "nonebot_plugin_bililive", "nonebot-plugin-bililive"]
+includes = ["nonebot_plugin_bililive"]
 
 [tool.pdm.dev-dependencies]
 dev = [
