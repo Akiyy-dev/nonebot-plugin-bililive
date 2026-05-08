@@ -296,7 +296,13 @@ def on_startup():
 
         check_proxy()
         install()
-        asyncio.get_event_loop().run_until_complete(check_playwright_env())
+        try:
+            asyncio.get_event_loop().run_until_complete(check_playwright_env())
+        except ImportError as err:
+            logger.warning(
+                "Playwright 运行环境不完整，已跳过启动时强校验；"
+                f"涉及截图/浏览器能力时可能不可用。错误：{err}"
+            )
         DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
