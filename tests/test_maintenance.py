@@ -6,6 +6,8 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+import nonebot
+
 
 class DummyDriver:
     config = {}
@@ -22,6 +24,12 @@ fake_localstore = ModuleType("nonebot_plugin_localstore")
 
 
 class DummyScheduler:
+    def scheduled_job(self, *args, **kwargs):
+        def decorator(func):
+            return func
+
+        return decorator
+
     def add_listener(self, *args, **kwargs):
         return None
 
@@ -40,6 +48,8 @@ def _get_plugin_data_dir() -> Path:
 
 
 fake_localstore.get_plugin_data_dir = _get_plugin_data_dir
+
+nonebot.init(driver="~none", log_level="ERROR")
 
 
 with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
