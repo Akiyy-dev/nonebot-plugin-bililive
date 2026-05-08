@@ -1,6 +1,5 @@
 from nonebot import require
 from nonebot.plugin import PluginMetadata
-from nonebot.plugin.manager import PluginLoader
 
 from .config import Config, plugin_config
 from .version import VERSION, __version__
@@ -8,17 +7,11 @@ from .version import VERSION, __version__
 require("nonebot_plugin_localstore")
 require("nonebot_plugin_apscheduler")
 
+from .utils import on_startup
 
-def bootstrap_plugin(force: bool = False):
-    if force or isinstance(globals()["__loader__"], PluginLoader):
-        from .utils import on_startup
+on_startup()
 
-        on_startup()
-
-        from . import plugins  # noqa: F401
-
-
-bootstrap_plugin()
+from . import plugins  # noqa: F401
 
 __plugin_meta__ = PluginMetadata(
     name="BiliLive",

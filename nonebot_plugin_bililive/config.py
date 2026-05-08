@@ -3,19 +3,12 @@ from collections.abc import Mapping
 from typing import Any
 
 from nonebot import get_plugin_config, logger
-from nonebot.compat import PYDANTIC_V2, ConfigDict, field_validator, model_validator
+from nonebot.compat import field_validator, model_validator
 from pydantic import BaseModel
 
 
 # 其他地方出现的类似 from .. import config，均是从 __init__.py 导入的 Config 实例
 class Config(BaseModel):
-    if PYDANTIC_V2:
-        model_config = ConfigDict(extra="ignore")
-    else:
-
-        class Config:
-            extra = "ignore"
-
     fastapi_reload: bool = False
     bililive_to_me: bool = True
     bililive_live_off_notify: bool = False

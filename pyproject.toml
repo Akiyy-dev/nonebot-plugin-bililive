@@ -42,7 +42,6 @@ Issues = "https://github.com/Akiyy-dev/nonebot-plugin-bililive/issues"
 
 [project.entry-points."nonebot.plugin"]
 nonebot-plugin-bililive = "nonebot_plugin_bililive"
-nonebot_plugin_bililive = "nonebot_plugin_bililive"
 
 [tool.nonebot]
 adapters = [
@@ -63,7 +62,7 @@ source = "file"
 path = "nonebot_plugin_bililive/version.py"
 
 [tool.pdm.build]
-includes = ["nonebot_plugin_bililive", "nonebot-plugin-bililive"]
+includes = ["nonebot_plugin_bililive"]
 
 [tool.pdm.dev-dependencies]
 dev = [
