@@ -28,10 +28,12 @@ from nonebot.rule import Rule
 
 from ..config import plugin_config
 
+DATA_DIR = store.get_plugin_data_dir()
+
 
 def get_data_dir():
     """获取插件数据目录。"""
-    return store.get_plugin_data_dir()
+    return DATA_DIR
 
 
 def get_path(*other):
@@ -295,7 +297,7 @@ def on_startup():
         check_proxy()
         install()
         asyncio.get_event_loop().run_until_complete(check_playwright_env())
-        get_data_dir().mkdir(parents=True, exist_ok=True)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def on_command(cmd, *args, **kwargs):

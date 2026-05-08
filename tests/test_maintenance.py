@@ -56,7 +56,6 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     db_module = import_module("nonebot_plugin_bililive.database.db")
     web_dynamic = import_module("nonebot_plugin_bililive.libs.dynamic.web")
     plugin_entry = import_module("nonebot_plugin_bililive")
-    hyphen_plugin_entry = import_module("nonebot-plugin-bililive")
     DB = db_module.DB
     models = import_module("nonebot_plugin_bililive.database.models")
     Group = models.Group
@@ -103,7 +102,6 @@ class PluginEntryTests(unittest.TestCase):
         self.assertEqual(plugin_entry.__plugin_meta__.config, Config)
         self.assertEqual(plugin_entry.__plugin_meta__.extra["author"], "Akiyy_Lab")
         self.assertEqual(plugin_entry.__version__, core_version.__version__)
-        self.assertIs(hyphen_plugin_entry.__plugin_meta__, plugin_entry.__plugin_meta__)
 
     def test_default_data_dir_uses_localstore(self):
         expected = _get_plugin_data_dir() / "data.sqlite3"
@@ -117,15 +115,8 @@ class PluginEntryTests(unittest.TestCase):
             'nonebot-plugin-bililive = "nonebot_plugin_bililive"',
             pyproject,
         )
-        self.assertIn(
-            'nonebot_plugin_bililive = "nonebot_plugin_bililive"',
-            pyproject,
-        )
         self.assertIn('bililive = "nonebot_plugin_bililive.__main__:main"', pyproject)
-        self.assertIn(
-            'includes = ["nonebot_plugin_bililive", "nonebot-plugin-bililive"]',
-            pyproject,
-        )
+        self.assertIn('includes = ["nonebot_plugin_bililive"]', pyproject)
         self.assertNotIn('nonebot2[fastapi]>=', pyproject)
         self.assertNotIn('bilireq>=', pyproject)
 
