@@ -13,6 +13,8 @@ from .models import Group, Sub, User, Version
 uid_list = {"live": {"list": [], "index": 0}, "dynamic": {"list": [], "index": 0}}
 dynamic_offset = {}
 
+_db_init_lock = asyncio.Lock()
+
 
 class DB:
     """数据库交互类，与增删改查无关的部分不应该在这里面实现"""
@@ -24,15 +26,18 @@ class DB:
         return Path(get_path("dynamic_offset.json"))
 
     @classmethod
-    async def init(cls):
-        """初始化数据库"""
+    def _orm_context_ok(cls) -> bool:
+        """_ready 与 Tortoise 1.x 全局上下文需同时成立，否则会出现 No TortoiseContext。"""
+        from tortoise.context import get_current_context
+
+        return cls._ready and get_current_context() is not None
+
+    @classmethod
+    async def _do_init(cls) -> None:
+        """在持有 _db_init_lock 时执行完整初始化。"""
         cls._ready = False
         config = {
             "connections": {
-                # "bililive": {
-                #     "engine": "tortoise.backends.sqlite",
-                #     "credentials": {"file_path": get_path("data.sqlite3")},
-                # },
                 "bililive": f"sqlite://{get_path('data.sqlite3')}"
             },
             "apps": {
@@ -53,25 +58,59 @@ class DB:
         cls._ready = True
 
     @classmethod
+    async def init(cls):
+        """初始化数据库"""
+        async with _db_init_lock:
+            await cls._do_init()
+
+    @classmethod
     async def close(cls):
-        cls._ready = False
-        await cls.save_dynamic_offsets()
-        await Tortoise.close_connections()
+        async with _db_init_lock:
+            cls._ready = False
+            await cls.save_dynamic_offsets()
+            await Tortoise.close_connections()
+
+    @classmethod
+    async def _recover_stale_orm(cls) -> None:
+        """_ready 仍为 True 但 Tortoise 上下文已丢失时，关闭并重新初始化。"""
+        async with _db_init_lock:
+            from tortoise.context import get_current_context
+
+            if get_current_context() is not None:
+                return
+            if not cls._ready:
+                return
+            logger.warning(
+                "Tortoise ORM 上下文已失效（例如其他代码关闭了连接），正在重新初始化数据库"
+            )
+            try:
+                await Tortoise.close_connections()
+            except Exception:
+                logger.exception("关闭 Tortoise 连接时出错，仍将尝试重新初始化")
+            cls._ready = False
+            await cls._do_init()
 
     @classmethod
     async def wait_until_ready(cls, timeout: float = 30) -> bool:
-        if cls._ready:
+        if cls._orm_context_ok():
             return True
 
         waited = 0.0
         interval = 0.1
         while waited < timeout:
-            if cls._ready:
+            if cls._orm_context_ok():
                 return True
+            if cls._ready:
+                from tortoise.context import get_current_context
+
+                if get_current_context() is None:
+                    await cls._recover_stale_orm()
+                    if cls._orm_context_ok():
+                        return True
             await asyncio.sleep(interval)
             waited += interval
 
-        return cls._ready
+        return cls._orm_context_ok()
 
     @classmethod
     async def load_dynamic_offsets(cls):
