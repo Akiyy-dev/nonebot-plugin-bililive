@@ -164,6 +164,9 @@ async def permission_check(
             raise FinishedException
         return
     if isinstance(event, GroupMessageEvent):
+        if not await db.wait_until_ready():
+            await bot.send(event, "数据库尚未初始化完成，请稍后再试")
+            raise FinishedException
         if not await db.get_group_admin(event.group_id):
             return
         if await (GROUP_ADMIN | GROUP_OWNER | SUPERUSER)(bot, event):
