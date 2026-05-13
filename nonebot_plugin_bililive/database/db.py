@@ -5,7 +5,6 @@ from pathlib import Path
 from nonebot import get_driver, logger
 from packaging.version import Version as version_parser
 from tortoise import Tortoise
-from tortoise.connection import connections
 
 from ..utils import get_path
 from ..version import VERSION as APP_VERSION
@@ -57,7 +56,7 @@ class DB:
     async def close(cls):
         cls._ready = False
         await cls.save_dynamic_offsets()
-        await connections.close_all()
+        await Tortoise.close_connections()
 
     @classmethod
     async def wait_until_ready(cls, timeout: float = 30) -> bool:
