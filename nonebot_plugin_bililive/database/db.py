@@ -81,7 +81,8 @@ class DB:
             if not cls._ready:
                 return
             logger.warning(
-                "Tortoise ORM 上下文已失效（例如其他代码关闭了连接），正在重新初始化数据库"
+                "Tortoise ORM 上下文已失效（可能被其他代码关闭连接），"
+                "正在重新初始化数据库"
             )
             try:
                 await Tortoise.close_connections()
