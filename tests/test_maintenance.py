@@ -197,7 +197,14 @@ class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
         ):
             await DB.init()
 
-        self.assertTrue(init_db.await_args.kwargs["_enable_global_fallback"])
+        if db_module._TORTOISE_V1:
+            self.assertTrue(
+                init_db.await_args.kwargs["_enable_global_fallback"]
+            )
+        else:
+            self.assertNotIn(
+                "_enable_global_fallback", init_db.await_args.kwargs
+            )
         self.assertTrue(DB._ready)
         generate_schemas.assert_awaited_once()
         migrate.assert_awaited_once()

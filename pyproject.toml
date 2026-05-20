@@ -28,7 +28,7 @@ dependencies = [
     "playwright>=1.58.0",
     "pydantic>=1.10.0,<3.0",
     "python-dotenv>=1.2.2",
-    "tortoise-orm[asyncpg]>=0.19.3",
+    "tortoise-orm[asyncpg]>=1.0.0,<2.0",
     "packaging>=26.0",
     "msvc-runtime>=14.34.31931; sys_platform == \"win32\"",
 ]

@@ -1,10 +1,31 @@
 import asyncio
+import inspect
 import json
 from pathlib import Path
+from typing import Callable
 
 from nonebot import get_driver, logger
 from packaging.version import Version as version_parser
 from tortoise import Tortoise
+
+get_current_context: Callable[[], object | None] | None
+
+
+def _detect_tortoise_v1() -> bool:
+    """Tortoise 1.x 才有 context 模块与 _enable_global_fallback 参数。"""
+    try:
+        from tortoise.context import get_current_context as _gcc
+    except ImportError:
+        return False
+
+    global get_current_context
+    get_current_context = _gcc
+    params = inspect.signature(Tortoise.init).parameters
+    return "_enable_global_fallback" in params
+
+
+get_current_context = None
+_TORTOISE_V1 = _detect_tortoise_v1()
 
 from ..utils import get_path
 from ..version import VERSION as APP_VERSION
@@ -28,9 +49,11 @@ class DB:
     @classmethod
     def _orm_context_ok(cls) -> bool:
         """_ready 与 Tortoise 1.x 全局上下文需同时成立，否则会出现 No TortoiseContext。"""
-        from tortoise.context import get_current_context
-
-        return cls._ready and get_current_context() is not None
+        if not cls._ready:
+            return False
+        if not _TORTOISE_V1:
+            return True
+        return get_current_context() is not None
 
     @classmethod
     async def _do_init(cls) -> None:
@@ -48,7 +71,16 @@ class DB:
             },
         }
 
-        await Tortoise.init(config, _enable_global_fallback=True)
+        init_kwargs = (
+            {"_enable_global_fallback": True} if _TORTOISE_V1 else {}
+        )
+        try:
+            await Tortoise.init(config, **init_kwargs)
+        except TypeError:
+            if init_kwargs:
+                await Tortoise.init(config)
+            else:
+                raise
 
         await Tortoise.generate_schemas()
         await cls.migrate()
@@ -73,9 +105,9 @@ class DB:
     @classmethod
     async def _recover_stale_orm(cls) -> None:
         """_ready 仍为 True 但 Tortoise 上下文已丢失时，关闭并重新初始化。"""
+        if not _TORTOISE_V1:
+            return
         async with _db_init_lock:
-            from tortoise.context import get_current_context
-
             if get_current_context() is not None:
                 return
             if not cls._ready:
@@ -101,13 +133,10 @@ class DB:
         while waited < timeout:
             if cls._orm_context_ok():
                 return True
-            if cls._ready:
-                from tortoise.context import get_current_context
-
-                if get_current_context() is None:
-                    await cls._recover_stale_orm()
-                    if cls._orm_context_ok():
-                        return True
+            if cls._ready and _TORTOISE_V1 and get_current_context() is None:
+                await cls._recover_stale_orm()
+                if cls._orm_context_ok():
+                    return True
             await asyncio.sleep(interval)
             waited += interval
 
