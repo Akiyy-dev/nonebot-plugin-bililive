@@ -1,8 +1,8 @@
 import asyncio
 import inspect
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from nonebot import get_driver, logger
 from packaging.version import Version as version_parser
