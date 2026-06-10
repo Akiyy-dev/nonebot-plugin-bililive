@@ -69,6 +69,7 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     DB = db_module.DB
     models = import_module("nonebot_plugin_bililive.database.models")
     Group = models.Group
+    Sub = models.Sub
     get_path = import_module("nonebot_plugin_bililive.utils").get_path
 
 
@@ -267,6 +268,72 @@ class DBPermissionTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(changed)
         update.assert_not_awaited()
+
+    async def test_set_sub_enabling_dynamic_resets_offset_and_updates_uid_list(self):
+        sub = SimpleNamespace(dynamic=False)
+        db_module.dynamic_offset.clear()
+        db_module.dynamic_offset[123] = 456
+        with (
+            patch.object(DB, "get_sub", new=AsyncMock(return_value=sub)),
+            patch.object(Sub, "update", new=AsyncMock(return_value=True)),
+            patch.object(DB, "update_uid_list", new=AsyncMock()) as update_uid_list,
+            patch.object(DB, "save_dynamic_offsets", new=AsyncMock()) as save_offsets,
+        ):
+            updated = await DB.set_sub(
+                "dynamic",
+                True,
+                uid=123,
+                type="group",
+                type_id=456,
+            )
+
+        self.assertTrue(updated)
+        self.assertEqual(db_module.dynamic_offset[123], -1)
+        save_offsets.assert_awaited_once()
+        update_uid_list.assert_awaited_once()
+
+    async def test_set_sub_enabling_dynamic_skips_reset_when_already_enabled(self):
+        sub = SimpleNamespace(dynamic=True)
+        db_module.dynamic_offset.clear()
+        db_module.dynamic_offset[123] = 456
+        with (
+            patch.object(DB, "get_sub", new=AsyncMock(return_value=sub)),
+            patch.object(Sub, "update", new=AsyncMock(return_value=True)),
+            patch.object(DB, "update_uid_list", new=AsyncMock()) as update_uid_list,
+            patch.object(DB, "save_dynamic_offsets", new=AsyncMock()) as save_offsets,
+        ):
+            updated = await DB.set_sub(
+                "dynamic",
+                True,
+                uid=123,
+                type="group",
+                type_id=456,
+            )
+
+        self.assertTrue(updated)
+        self.assertEqual(db_module.dynamic_offset[123], 456)
+        save_offsets.assert_not_awaited()
+        update_uid_list.assert_awaited_once()
+
+    async def test_set_sub_disabling_dynamic_updates_uid_list(self):
+        sub = SimpleNamespace(dynamic=True)
+        with (
+            patch.object(DB, "get_sub", new=AsyncMock(return_value=sub)),
+            patch.object(Sub, "update", new=AsyncMock(return_value=True)),
+            patch.object(DB, "update_uid_list", new=AsyncMock()) as update_uid_list,
+            patch.object(DB, "save_dynamic_offsets", new=AsyncMock()) as save_offsets,
+        ):
+            updated = await DB.set_sub(
+                "dynamic",
+                False,
+                uid=123,
+                type="group",
+                type_id=456,
+            )
+
+        self.assertTrue(updated)
+        save_offsets.assert_not_awaited()
+        update_uid_list.assert_awaited_once()
 
 
 if __name__ == "__main__":

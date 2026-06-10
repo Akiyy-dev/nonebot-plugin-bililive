@@ -304,7 +304,19 @@ class DB:
     @classmethod
     async def set_sub(cls, conf, switch, **kwargs):
         """开关订阅设置"""
-        return await Sub.update(kwargs, **{conf: switch})
+        sub = await cls.get_sub(**kwargs)
+        if not sub:
+            return False
+        previous = getattr(sub, conf, None)
+        updated = await Sub.update(kwargs, **{conf: switch})
+        if not updated:
+            return False
+        if conf == "dynamic":
+            if switch and not previous:
+                dynamic_offset[int(kwargs["uid"])] = -1
+                await cls.save_dynamic_offsets()
+            await cls.update_uid_list()
+        return True
 
     @classmethod
     async def get_version(cls):
