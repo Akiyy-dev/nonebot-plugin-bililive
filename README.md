@@ -82,8 +82,9 @@ BiliLive 是一个基于 NoneBot2 的 B 站推送插件，支持将 UP 主的直
 | BILILIVE_DYNAMIC_FONT | 否 | Noto Sans CJK SC | 截图字体 |
 | BILILIVE_DYNAMIC_BIG_IMAGE | 否 | false | 是否优先展示大图 |
 | BILILIVE_COMMAND_PREFIX | 否 | 空字符串 | 命令额外前缀 |
+| BILILIVE_CHROMIUM_ENDPOINT | 否 | 无 | 外部 Chromium CDP 地址，如 `http://127.0.0.1:9222` |
 
-动态抓取使用 Playwright 持久化浏览器中的 cookies 请求网页动态接口。通常不需要额外配置 Cookie 登录；如果某些 UID 持续抓取失败，建议在插件使用的浏览器数据目录中登录一个常用的 B 站账号，以提高动态抓取成功率。
+动态抓取优先使用 `BILILIVE_CHROMIUM_ENDPOINT` 连接的外部 Chromium；未配置时使用 Playwright 持久化浏览器中的 cookies 请求网页动态接口。若某些 UID 持续抓取失败，建议在外部 Chromium 或插件浏览器数据目录中登录常用 B 站账号，以降低风控概率。
 
 ## 🎉 使用
 

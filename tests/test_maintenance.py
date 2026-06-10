@@ -65,6 +65,7 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     core_version = import_module("nonebot_plugin_bililive.version")
     db_module = import_module("nonebot_plugin_bililive.database.db")
     web_dynamic = import_module("nonebot_plugin_bililive.libs.dynamic.web")
+    browser_module = import_module("nonebot_plugin_bililive.utils.browser")
     plugin_entry = import_module("nonebot_plugin_bililive")
     DB = db_module.DB
     models = import_module("nonebot_plugin_bililive.database.models")
@@ -103,6 +104,16 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.bililive_live_interval, 12)
         self.assertEqual(config.bililive_command_prefix, "hb")
 
+    def test_chromium_endpoint_is_trimmed(self):
+        config = Config(bililive_chromium_endpoint="  http://127.0.0.1:9222  ")
+
+        self.assertEqual(config.bililive_chromium_endpoint, "http://127.0.0.1:9222")
+
+    def test_legacy_haruka_chromium_endpoint_is_migrated(self):
+        config = Config(**{"haruka_chromium_endpoint": "http://127.0.0.1:9333"})
+
+        self.assertEqual(config.bililive_chromium_endpoint, "http://127.0.0.1:9333")
+
 
 class PluginEntryTests(unittest.TestCase):
     def test_plugin_entry_exposes_plugin_metadata(self):
@@ -130,6 +141,67 @@ class PluginEntryTests(unittest.TestCase):
         self.assertIn('includes = ["nonebot_plugin_bililive"]', pyproject)
         self.assertNotIn('nonebot2[fastapi]>=', pyproject)
         self.assertNotIn('bilireq>=', pyproject)
+
+
+class BrowserHelperTests(unittest.IsolatedAsyncioTestCase):
+    def test_get_dynamic_api_headers_include_space_referer(self):
+        headers = browser_module.get_dynamic_api_headers(477332594)
+
+        self.assertEqual(
+            headers["referer"],
+            "https://space.bilibili.com/477332594/dynamic",
+        )
+        self.assertEqual(headers["origin"], "https://space.bilibili.com")
+        self.assertIn("application/json", headers["accept"])
+
+    async def test_init_browser_prefers_external_chromium_when_configured(self):
+        cdp_context = object()
+        with (
+            patch.object(
+                browser_module.plugin_config,
+                "bililive_chromium_endpoint",
+                "http://127.0.0.1:9222",
+            ),
+            patch.object(
+                browser_module,
+                "init_browser_cdp",
+                new=AsyncMock(return_value=cdp_context),
+            ) as init_browser_cdp,
+            patch.object(
+                browser_module,
+                "init_browser_playwright",
+                new=AsyncMock(),
+            ) as init_browser_playwright,
+        ):
+            context = await browser_module.init_browser()
+
+        self.assertIs(context, cdp_context)
+        init_browser_cdp.assert_awaited_once_with("http://127.0.0.1:9222")
+        init_browser_playwright.assert_not_awaited()
+
+    async def test_init_browser_falls_back_to_playwright_when_cdp_fails(self):
+        playwright_context = object()
+        with (
+            patch.object(
+                browser_module.plugin_config,
+                "bililive_chromium_endpoint",
+                "http://127.0.0.1:9222",
+            ),
+            patch.object(
+                browser_module,
+                "init_browser_cdp",
+                new=AsyncMock(side_effect=RuntimeError("connect failed")),
+            ),
+            patch.object(
+                browser_module,
+                "init_browser_playwright",
+                new=AsyncMock(return_value=playwright_context),
+            ) as init_browser_playwright,
+        ):
+            context = await browser_module.init_browser()
+
+        self.assertIs(context, playwright_context)
+        init_browser_playwright.assert_awaited_once()
 
 
 class WebDynamicTests(unittest.TestCase):
