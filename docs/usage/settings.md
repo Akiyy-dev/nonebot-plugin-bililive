@@ -132,6 +132,24 @@ BILILIVE_CAPTCHA_TOKEN=bililive
 BILILIVE_BROWSER_UA="Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.210 Mobile Safari/537.36"
 ```
 
+## BILILIVE_CHROMIUM_ENDPOINT
+
+默认值：""
+
+外部 Chromium 的 CDP 连接地址。配置后插件将优先连接该浏览器进行动态抓取与截图，不再自动下载 Playwright 内置 Chromium。
+
+启动示例（Windows）：
+
+```bat
+chrome.exe --remote-debugging-port=9222
+```
+
+```yml
+BILILIVE_CHROMIUM_ENDPOINT=http://127.0.0.1:9222
+```
+
+连接失败时会自动回退到 Playwright 内置浏览器。请在外部 Chromium 中登录 B 站账号，以降低动态接口风控概率。
+
 ## BILILIVE_DYNAMIC_TIMEOUT
 
 默认值：10

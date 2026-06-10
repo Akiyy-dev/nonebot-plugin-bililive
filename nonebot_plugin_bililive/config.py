@@ -21,6 +21,7 @@ class Config(BaseModel):
     bililive_captcha_address: str = "https://captcha-cd.ngworks.cn"
     bililive_captcha_token: str = "bililive"
     bililive_browser_ua: str | None = None
+    bililive_chromium_endpoint: str | None = None
     bililive_dynamic_timeout: int = 30
     bililive_dynamic_font_source: str = "system"
     bililive_dynamic_font: str | None = "Noto Sans CJK SC"
@@ -46,6 +47,7 @@ class Config(BaseModel):
             "haruka_captcha_address": "bililive_captcha_address",
             "haruka_captcha_token": "bililive_captcha_token",
             "haruka_browser_ua": "bililive_browser_ua",
+            "haruka_chromium_endpoint": "bililive_chromium_endpoint",
             "haruka_dynamic_timeout": "bililive_dynamic_timeout",
             "haruka_dynamic_font_source": "bililive_dynamic_font_source",
             "haruka_dynamic_font": "bililive_dynamic_font",
@@ -71,6 +73,14 @@ class Config(BaseModel):
     @classmethod
     def dynamic_interval_non_negative(cls, value: int):
         return 0 if value < 1 else value
+
+    @field_validator("bililive_chromium_endpoint")
+    @classmethod
+    def chromium_endpoint(cls, value: str | None):
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
 
     @field_validator("bililive_screenshot_style")
     @classmethod

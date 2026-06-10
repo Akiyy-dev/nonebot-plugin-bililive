@@ -7,7 +7,7 @@ from pathlib import Path
 
 from nonebot import logger
 from playwright.__main__ import main
-from playwright.async_api import BrowserContext, Page, async_playwright
+from playwright.async_api import BrowserContext, Page, Playwright, async_playwright
 
 from ..config import plugin_config
 from ..utils import get_path
@@ -15,29 +15,81 @@ from .captcha_solver import CaptchaInfer
 from .fonts_provider import fill_font
 
 _browser: BrowserContext | None = None
+_playwright: Playwright | None = None
 mobile_js = Path(__file__).parent.joinpath("mobile.js")
 WEB_DYNAMIC_URL = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space"
+DEFAULT_MOBILE_USER_AGENT = (
+    "Mozilla/5.0 (Linux; Android 10; RMX1911) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36"
+)
+DEFAULT_DESKTOP_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+)
 
 
-async def init_browser(proxy=plugin_config.bililive_proxy, **kwargs) -> BrowserContext:
-    logger.info("初始化浏览器")
+def get_user_agent() -> str:
+    if plugin_config.bililive_browser_ua:
+        return plugin_config.bililive_browser_ua
+    if plugin_config.bililive_screenshot_style.lower() == "mobile":
+        return DEFAULT_MOBILE_USER_AGENT
+    return DEFAULT_DESKTOP_USER_AGENT
+
+
+def get_dynamic_api_headers(uid: int) -> dict[str, str]:
+    return {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "referer": f"https://space.bilibili.com/{uid}/dynamic",
+        "origin": "https://space.bilibili.com",
+    }
+
+
+async def _ensure_playwright() -> Playwright:
+    global _playwright
+    if _playwright is None:
+        _playwright = await async_playwright().start()
+    return _playwright
+
+
+async def _apply_browser_headers(context: BrowserContext) -> None:
+    await context.set_extra_http_headers(
+        {
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        }
+    )
+
+
+async def init_browser_cdp(endpoint: str) -> BrowserContext:
+    logger.info(f"连接外部 Chromium：{endpoint}")
+    global _browser
+    playwright = await _ensure_playwright()
+    browser = await playwright.chromium.connect_over_cdp(endpoint)
+    if browser.contexts:
+        browser_context = browser.contexts[0]
+    else:
+        browser_context = await browser.new_context(
+            user_agent=get_user_agent(),
+            device_scale_factor=2,
+        )
+    await _apply_browser_headers(browser_context)
+    _browser = browser_context
+    return _browser
+
+
+async def init_browser_playwright(
+    proxy=plugin_config.bililive_proxy, **kwargs
+) -> BrowserContext:
+    logger.info("初始化 Playwright 内置浏览器")
     if proxy:
         kwargs["proxy"] = {"server": proxy}
     global _browser
-    p = await async_playwright().start()
+    playwright = await _ensure_playwright()
     browser_data = Path(get_path("browser"))
     browser_data.mkdir(parents=True, exist_ok=True)
-    browser_context = await p.chromium.launch_persistent_context(
+    browser_context = await playwright.chromium.launch_persistent_context(
         browser_data,
-        user_agent=plugin_config.bililive_browser_ua
-        or (
-            (
-                "Mozilla/5.0 (Linux; Android 10; RMX1911) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/100.0.4896.127 Mobile Safari/537.36"
-            )
-            if plugin_config.bililive_screenshot_style.lower() == "mobile"
-            else None
-        ),
+        user_agent=get_user_agent(),
         device_scale_factor=2,
         timeout=plugin_config.bililive_dynamic_timeout * 1000,
         **kwargs,
@@ -53,8 +105,22 @@ async def init_browser(proxy=plugin_config.bililive_proxy, **kwargs) -> BrowserC
                 }
             ]
         )
+    await _apply_browser_headers(browser_context)
     _browser = browser_context
     return _browser
+
+
+async def init_browser(proxy=plugin_config.bililive_proxy, **kwargs) -> BrowserContext:
+    endpoint = plugin_config.bililive_chromium_endpoint
+    if endpoint:
+        try:
+            return await init_browser_cdp(endpoint)
+        except Exception as err:
+            logger.warning(
+                f"连接外部 Chromium 失败（{endpoint}），"
+                f"将回退到 Playwright 内置浏览器：{err}"
+            )
+    return await init_browser_playwright(proxy=proxy, **kwargs)
 
 
 async def get_browser() -> BrowserContext:
@@ -76,23 +142,28 @@ async def get_bilibili_cookies() -> dict[str, str]:
 async def get_user_dynamics_payload_in_browser(uid: int) -> dict:
     browser = await get_browser()
     page = await browser.new_page()
+    api_headers = get_dynamic_api_headers(uid)
     try:
+        await page.set_extra_http_headers(
+            {
+                **api_headers,
+                "User-Agent": get_user_agent(),
+            }
+        )
         await page.goto(
             "https://www.bilibili.com/",
             wait_until="domcontentloaded",
             timeout=plugin_config.bililive_dynamic_timeout * 1000,
         )
         return await page.evaluate(
-            """async ({ url, uid }) => {
+            """async ({ url, uid, headers }) => {
                 const response = await fetch(`${url}?host_mid=${uid}`, {
                     credentials: 'include',
-                    headers: {
-                        accept: 'application/json, text/plain, */*',
-                    },
+                    headers,
                 });
                 return await response.json();
             }""",
-            {"url": WEB_DYNAMIC_URL, "uid": str(uid)},
+            {"url": WEB_DYNAMIC_URL, "uid": str(uid), "headers": api_headers},
         )
     finally:
         with contextlib.suppress(Exception):

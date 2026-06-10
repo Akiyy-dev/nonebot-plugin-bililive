@@ -135,9 +135,7 @@ async def process_dynamic_uid(uid: int):
 
     dynamic_risk_control_until.pop(uid, None)
 
-    if not dynamics:  # 没发过动态
-        if uid in offset and offset[uid] == -1:  # 不记录会导致第一次发动态不推送
-            await db.set_dynamic_offset(uid, 0)
+    if not dynamics:
         return
     name = get_dynamic_author_name(dynamics[0], use_web_fallback)
 
