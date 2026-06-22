@@ -5,9 +5,13 @@ import re
 import sys
 from pathlib import Path
 
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
+
 from nonebot import logger
 from playwright.__main__ import main
-from playwright.async_api import BrowserContext, Page, Playwright, async_playwright
+from playwright._impl._errors import TargetClosedError
+from playwright.async_api import Browser, BrowserContext, Page, Playwright, async_playwright
 
 from ..config import plugin_config
 from ..utils import get_path
@@ -15,7 +19,11 @@ from .captcha_solver import CaptchaInfer
 from .fonts_provider import fill_font
 
 _browser: BrowserContext | None = None
+_cdp_browser: Browser | None = None
 _playwright: Playwright | None = None
+_browser_lock: asyncio.Lock | None = None
+_browser_lock_loop: asyncio.AbstractEventLoop | None = None
+T = TypeVar("T")
 mobile_js = Path(__file__).parent.joinpath("mobile.js")
 WEB_DYNAMIC_URL = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space"
 DEFAULT_MOBILE_USER_AGENT = (
@@ -60,20 +68,70 @@ async def _apply_browser_headers(context: BrowserContext) -> None:
     )
 
 
+def _get_browser_lock() -> asyncio.Lock:
+    global _browser_lock, _browser_lock_loop
+    loop = asyncio.get_running_loop()
+    if _browser_lock is None or _browser_lock_loop is not loop:
+        _browser_lock = asyncio.Lock()
+        _browser_lock_loop = loop
+    return _browser_lock
+
+
+def _is_browser_healthy(context: BrowserContext) -> bool:
+    try:
+        browser = context.browser
+        if browser is not None and not browser.is_connected():
+            return False
+        _ = context.pages
+        return True
+    except Exception:
+        return False
+
+
+async def _reset_browser() -> None:
+    global _browser, _cdp_browser
+    if _cdp_browser is not None:
+        with contextlib.suppress(Exception):
+            await _cdp_browser.close()
+        _cdp_browser = None
+    elif _browser is not None:
+        with contextlib.suppress(Exception):
+            await _browser.close()
+    _browser = None
+
+
+async def _with_browser_retry(
+    coro_factory: Callable[[], Awaitable[T]],
+) -> T:
+    for attempt in range(2):
+        try:
+            return await coro_factory()
+        except TargetClosedError:
+            if attempt == 0:
+                logger.warning("浏览器连接已断开，正在重试")
+                async with _get_browser_lock():
+                    await _reset_browser()
+                continue
+            raise
+    raise RuntimeError("unreachable")
+
+
 async def init_browser_cdp(endpoint: str) -> BrowserContext:
+    global _browser, _cdp_browser
     logger.info(f"连接外部 Chromium：{endpoint}")
-    global _browser
     playwright = await _ensure_playwright()
-    browser = await playwright.chromium.connect_over_cdp(endpoint)
-    if browser.contexts:
-        browser_context = browser.contexts[0]
+    cdp_browser = await playwright.chromium.connect_over_cdp(endpoint)
+    _cdp_browser = cdp_browser
+    if cdp_browser.contexts:
+        browser_context = cdp_browser.contexts[0]
     else:
-        browser_context = await browser.new_context(
+        browser_context = await cdp_browser.new_context(
             user_agent=get_user_agent(),
             device_scale_factor=2,
         )
     await _apply_browser_headers(browser_context)
     _browser = browser_context
+    logger.info("外部 Chromium 已连接")
     return _browser
 
 
@@ -124,10 +182,13 @@ async def init_browser(proxy=plugin_config.bililive_proxy, **kwargs) -> BrowserC
 
 
 async def get_browser() -> BrowserContext:
-    global _browser
-    if not _browser:
-        _browser = await init_browser()
-    return _browser
+    async with _get_browser_lock():
+        if _browser and _is_browser_healthy(_browser):
+            return _browser
+        if _browser:
+            logger.warning("浏览器上下文已失效，正在重新连接")
+            await _reset_browser()
+        return await init_browser()
 
 
 async def get_bilibili_cookies() -> dict[str, str]:
@@ -140,34 +201,37 @@ async def get_bilibili_cookies() -> dict[str, str]:
 
 
 async def get_user_dynamics_payload_in_browser(uid: int) -> dict:
-    browser = await get_browser()
-    page = await browser.new_page()
-    api_headers = get_dynamic_api_headers(uid)
-    try:
-        await page.set_extra_http_headers(
-            {
-                **api_headers,
-                "User-Agent": get_user_agent(),
-            }
-        )
-        await page.goto(
-            "https://www.bilibili.com/",
-            wait_until="domcontentloaded",
-            timeout=plugin_config.bililive_dynamic_timeout * 1000,
-        )
-        return await page.evaluate(
-            """async ({ url, uid, headers }) => {
-                const response = await fetch(`${url}?host_mid=${uid}`, {
-                    credentials: 'include',
-                    headers,
-                });
-                return await response.json();
-            }""",
-            {"url": WEB_DYNAMIC_URL, "uid": str(uid), "headers": api_headers},
-        )
-    finally:
-        with contextlib.suppress(Exception):
-            await page.close()
+    async def _fetch() -> dict:
+        browser = await get_browser()
+        page = await browser.new_page()
+        api_headers = get_dynamic_api_headers(uid)
+        try:
+            await page.set_extra_http_headers(
+                {
+                    **api_headers,
+                    "User-Agent": get_user_agent(),
+                }
+            )
+            await page.goto(
+                "https://www.bilibili.com/",
+                wait_until="domcontentloaded",
+                timeout=plugin_config.bililive_dynamic_timeout * 1000,
+            )
+            return await page.evaluate(
+                """async ({ url, uid, headers }) => {
+                    const response = await fetch(`${url}?host_mid=${uid}`, {
+                        credentials: 'include',
+                        headers,
+                    });
+                    return await response.json();
+                }""",
+                {"url": WEB_DYNAMIC_URL, "uid": str(uid), "headers": api_headers},
+            )
+        finally:
+            with contextlib.suppress(Exception):
+                await page.close()
+
+    return await _with_browser_retry(_fetch)
 
 
 async def get_dynamic_screenshot(
@@ -191,6 +255,11 @@ async def get_dynamic_screenshot(
                 await page.screenshot(clip=clip, full_page=True, type="jpeg", quality=98),
                 None,
             )
+        except TargetClosedError:
+            logger.warning(f"浏览器连接已断开，截图重试 {i + 1}/3")
+            async with _get_browser_lock():
+                await _reset_browser()
+            err = "截图失败"
         except TimeoutError:
             logger.warning(f"截图超时，重试 {i + 1}/3")
             err = "截图超时"

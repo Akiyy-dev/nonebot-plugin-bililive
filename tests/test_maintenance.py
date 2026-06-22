@@ -4,7 +4,7 @@ import unittest
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import nonebot
 
@@ -74,6 +74,9 @@ with patch("nonebot.get_driver", return_value=DummyDriver()), patch(
     db_module = import_module("nonebot_plugin_bililive.database.db")
     web_dynamic = import_module("nonebot_plugin_bililive.libs.dynamic.web")
     browser_module = import_module("nonebot_plugin_bililive.utils.browser")
+    dynamic_pusher_module = import_module(
+        "nonebot_plugin_bililive.plugins.pusher.dynamic_pusher"
+    )
     plugin_entry = import_module("nonebot_plugin_bililive")
     DB = db_module.DB
     models = import_module("nonebot_plugin_bililive.database.models")
@@ -152,6 +155,12 @@ class PluginEntryTests(unittest.TestCase):
 
 
 class BrowserHelperTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        browser_module._browser = None
+        browser_module._cdp_browser = None
+        browser_module._browser_lock = None
+        browser_module._browser_lock_loop = None
+
     def test_get_dynamic_api_headers_include_space_referer(self):
         headers = browser_module.get_dynamic_api_headers(477332594)
 
@@ -210,6 +219,99 @@ class BrowserHelperTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIs(context, playwright_context)
         init_browser_playwright.assert_awaited_once()
+
+    async def test_get_browser_reinits_when_stale(self):
+        dead_context = MagicMock()
+        fresh_context = object()
+        browser_module._browser = dead_context
+        browser_module._cdp_browser = None
+
+        with (
+            patch.object(browser_module, "_is_browser_healthy", return_value=False),
+            patch.object(
+                browser_module, "_reset_browser", new=AsyncMock()
+            ) as reset_browser,
+            patch.object(
+                browser_module, "init_browser", new=AsyncMock(return_value=fresh_context)
+            ) as init_browser,
+        ):
+            context = await browser_module.get_browser()
+
+        self.assertIs(context, fresh_context)
+        reset_browser.assert_awaited_once()
+        init_browser.assert_awaited_once()
+        browser_module._browser = None
+        browser_module._cdp_browser = None
+        browser_module._browser_lock = None
+        browser_module._browser_lock_loop = None
+
+    async def test_get_user_dynamics_payload_retries_after_target_closed(self):
+        page = AsyncMock()
+        page.evaluate = AsyncMock(return_value={"code": 0, "data": {"items": []}})
+        calls = {"count": 0}
+        context = SimpleNamespace()
+
+        async def flaky_new_page():
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise browser_module.TargetClosedError(
+                    "BrowserContext.new_page: Target page, context or browser has been closed"
+                )
+            return page
+
+        context.new_page = flaky_new_page
+
+        with (
+            patch.object(
+                browser_module,
+                "get_browser",
+                new=AsyncMock(return_value=context),
+            ),
+            patch.object(
+                browser_module, "_reset_browser", new=AsyncMock()
+            ) as reset_browser,
+        ):
+            payload = await browser_module.get_user_dynamics_payload_in_browser(477332594)
+
+        self.assertEqual(payload, {"code": 0, "data": {"items": []}})
+        reset_browser.assert_awaited_once()
+        self.assertEqual(calls["count"], 2)
+
+
+class DynamicPusherFallbackTests(unittest.IsolatedAsyncioTestCase):
+    async def test_get_user_dynamics_with_web_fallback_on_target_closed(self):
+        web_items = [web_dynamic.WebDynamicItem(1, "DYNAMIC_TYPE_WORD", "tester")]
+
+        with (
+            patch.object(
+                dynamic_pusher_module,
+                "get_user_dynamics_payload_in_browser",
+                new=AsyncMock(
+                    side_effect=dynamic_pusher_module.TargetClosedError(
+                        "BrowserContext.new_page: browser has been closed"
+                    )
+                ),
+            ),
+            patch.object(
+                dynamic_pusher_module,
+                "get_bilibili_cookies",
+                new=AsyncMock(return_value={"SESSDATA": "test"}),
+            ),
+            patch.object(
+                dynamic_pusher_module,
+                "get_user_dynamics_web",
+                new=AsyncMock(return_value=web_items),
+            ) as get_user_dynamics_web,
+        ):
+            dynamics, use_web_fallback = (
+                await dynamic_pusher_module.get_user_dynamics_with_web_fallback(
+                    477332594
+                )
+            )
+
+        self.assertEqual(dynamics, web_items)
+        self.assertTrue(use_web_fallback)
+        get_user_dynamics_web.assert_awaited_once()
 
 
 class WebDynamicTests(unittest.TestCase):

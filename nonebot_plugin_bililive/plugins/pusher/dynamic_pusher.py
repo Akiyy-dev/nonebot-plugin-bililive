@@ -11,6 +11,7 @@ from apscheduler.events import (
 )
 from nonebot import get_driver, logger
 from nonebot.adapters.onebot.v11.message import MessageSegment
+from playwright._impl._errors import TargetClosedError
 
 from ...config import plugin_config
 from ...database import DB as db
@@ -81,6 +82,10 @@ async def get_user_dynamics_with_web_fallback(uid: int) -> tuple[list, bool]:
         logger.debug(
             f"浏览器上下文动态接口获取失败，尝试直连 Web API：{uid} "
             f"{browser_error.code} {browser_error.msg}"
+        )
+    except TargetClosedError as browser_error:
+        logger.warning(
+            f"浏览器上下文已关闭，尝试直连 Web API：{uid} {browser_error}"
         )
 
     cookies = await get_bilibili_cookies()
