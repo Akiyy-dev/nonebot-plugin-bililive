@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import monotonic
 
 from apscheduler.events import (
@@ -45,11 +45,7 @@ WEB_DYNAMIC_TYPE_MESSAGES = {
     "DYNAMIC_TYPE_MUSIC": "发布了新音频",
 }
 DYNAMIC_FETCH_CONCURRENCY = 4
-
-
-async def throttle_dynamic_loop():
-    if plugin_config.bililive_dynamic_interval == 0:
-        await asyncio.sleep(1)
+DYNAMIC_THROTTLE_SECONDS = 1
 
 
 def get_dynamic_id(dynamic, use_web_fallback: bool) -> int:
@@ -108,7 +104,6 @@ async def process_dynamic_uid(uid: int):
     if retry_at is not None:
         if retry_at > monotonic():
             logger.debug(f"动态接口风控冷却中，跳过 {name}（{uid}）")
-            await throttle_dynamic_loop()
             return
         del dynamic_risk_control_until[uid]
 
@@ -191,36 +186,46 @@ async def process_dynamic_uid(uid: int):
 
 async def dy_sched():
     """动态推送"""
-    if not await db.wait_until_ready():
-        logger.debug("数据库尚未初始化完成，跳过本轮动态推送")
-        await throttle_dynamic_loop()
+    try:
+        if not await db.wait_until_ready():
+            logger.debug("数据库尚未初始化完成，跳过本轮动态推送")
+            return
+
+        uids = await db.get_uid_list("dynamic")
+        if not uids:
+            return
+
+        logger.debug(f"爬取动态列表，总共 {len(uids)} 人")
+        semaphore = asyncio.Semaphore(DYNAMIC_FETCH_CONCURRENCY)
+
+        async def run_for_uid(uid: int):
+            async with semaphore:
+                await process_dynamic_uid(uid)
+
+        await asyncio.gather(*(run_for_uid(uid) for uid in uids))
+    except asyncio.CancelledError:
+        logger.debug("动态推送任务已取消")
+
+
+def schedule_next_dynamic_job(*, immediate: bool = False):
+    if scheduler.get_job("dynamic_sched"):
         return
-
-    uids = await db.get_uid_list("dynamic")
-    if not uids:
-        # 没有订阅先暂停一秒再跳过，不然会导致 CPU 占用过高
-        await throttle_dynamic_loop()
-        return
-
-    logger.debug(f"爬取动态列表，总共 {len(uids)} 人")
-    semaphore = asyncio.Semaphore(DYNAMIC_FETCH_CONCURRENCY)
-
-    async def run_for_uid(uid: int):
-        async with semaphore:
-            await process_dynamic_uid(uid)
-
-    await asyncio.gather(*(run_for_uid(uid) for uid in uids))
-    await throttle_dynamic_loop()
+    delay = timedelta(0) if immediate else timedelta(seconds=DYNAMIC_THROTTLE_SECONDS)
+    scheduler.add_job(
+        dy_sched,
+        id="dynamic_sched",
+        next_run_time=datetime.now(scheduler.timezone) + delay,
+    )
 
 
 def dynamic_lisener(event):
     if hasattr(event, "job_id") and event.job_id != "dynamic_sched":
         return
-    job = scheduler.get_job("dynamic_sched")
-    if not job:
-        scheduler.add_job(
-            dy_sched, id="dynamic_sched", next_run_time=datetime.now(scheduler.timezone)
-        )
+    if event.code == EVENT_JOB_ERROR and isinstance(
+        getattr(event, "exception", None), asyncio.CancelledError
+    ):
+        logger.debug("动态推送任务已取消，将重新调度")
+    schedule_next_dynamic_job(immediate=event.code == EVENT_SCHEDULER_STARTED)
 
 
 if plugin_config.bililive_dynamic_interval == 0:
