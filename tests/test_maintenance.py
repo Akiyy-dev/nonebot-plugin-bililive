@@ -255,7 +255,8 @@ class BrowserHelperTests(unittest.IsolatedAsyncioTestCase):
             calls["count"] += 1
             if calls["count"] == 1:
                 raise browser_module.TargetClosedError(
-                    "BrowserContext.new_page: Target page, context or browser has been closed"
+                    "BrowserContext.new_page: Target page, context or browser "
+                    "has been closed"
                 )
             return page
 

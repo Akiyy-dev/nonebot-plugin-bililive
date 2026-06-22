@@ -3,15 +3,20 @@ import contextlib
 import os
 import re
 import sys
-from pathlib import Path
-
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import TypeVar
 
 from nonebot import logger
 from playwright.__main__ import main
 from playwright._impl._errors import TargetClosedError
-from playwright.async_api import Browser, BrowserContext, Page, Playwright, async_playwright
+from playwright.async_api import (
+    Browser,
+    BrowserContext,
+    Page,
+    Playwright,
+    async_playwright,
+)
 
 from ..config import plugin_config
 from ..utils import get_path
