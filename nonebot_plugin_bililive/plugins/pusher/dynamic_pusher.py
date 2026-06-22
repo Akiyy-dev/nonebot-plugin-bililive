@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from datetime import datetime, timedelta
 from time import monotonic
 
@@ -8,7 +9,7 @@ from apscheduler.events import (
     EVENT_JOB_MISSED,
     EVENT_SCHEDULER_STARTED,
 )
-from nonebot import logger
+from nonebot import get_driver, logger
 from nonebot.adapters.onebot.v11.message import MessageSegment
 
 from ...config import plugin_config
@@ -46,6 +47,10 @@ WEB_DYNAMIC_TYPE_MESSAGES = {
 }
 DYNAMIC_FETCH_CONCURRENCY = 4
 DYNAMIC_THROTTLE_SECONDS = 1
+_dynamic_scheduler_stopping = False
+_dynamic_listener_events = (
+    EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED | EVENT_SCHEDULER_STARTED
+)
 
 
 def get_dynamic_id(dynamic, use_web_fallback: bool) -> int:
@@ -111,9 +116,6 @@ async def process_dynamic_uid(uid: int):
     use_web_fallback = False
     try:
         dynamics, use_web_fallback = await get_user_dynamics_with_web_fallback(uid)
-    except asyncio.CancelledError:
-        logger.debug(f"动态轮询任务已取消：{name}（{uid}）")
-        return
     except WebDynamicError as e:
         retry_seconds = (
             WEB_REQUEST_BANNED_RETRY_SECONDS
@@ -204,10 +206,24 @@ async def dy_sched():
 
         await asyncio.gather(*(run_for_uid(uid) for uid in uids))
     except asyncio.CancelledError:
+        if _dynamic_scheduler_stopping:
+            raise
         logger.debug("动态推送任务已取消")
 
 
+def _stop_dynamic_scheduler():
+    global _dynamic_scheduler_stopping
+    _dynamic_scheduler_stopping = True
+    if plugin_config.bililive_dynamic_interval == 0:
+        with contextlib.suppress(ValueError):
+            scheduler.remove_listener(dynamic_lisener, _dynamic_listener_events)
+    with contextlib.suppress(Exception):
+        scheduler.remove_job("dynamic_sched")
+
+
 def schedule_next_dynamic_job(*, immediate: bool = False):
+    if _dynamic_scheduler_stopping or not scheduler.running:
+        return
     if scheduler.get_job("dynamic_sched"):
         return
     delay = timedelta(0) if immediate else timedelta(seconds=DYNAMIC_THROTTLE_SECONDS)
@@ -229,10 +245,7 @@ def dynamic_lisener(event):
 
 
 if plugin_config.bililive_dynamic_interval == 0:
-    scheduler.add_listener(
-        dynamic_lisener,
-        EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED | EVENT_SCHEDULER_STARTED,
-    )
+    scheduler.add_listener(dynamic_lisener, _dynamic_listener_events)
 else:
     scheduler.add_job(
         dy_sched,
@@ -243,3 +256,5 @@ else:
         max_instances=1,
         misfire_grace_time=5,
     )
+
+get_driver().on_shutdown(_stop_dynamic_scheduler)

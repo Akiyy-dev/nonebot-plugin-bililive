@@ -12,10 +12,10 @@ import nonebot
 class DummyDriver:
     config = {}
 
-    def on_startup(self, func):
+    def on_startup(self, func, priority: int = 0):
         return func
 
-    def on_shutdown(self, func):
+    def on_shutdown(self, func, priority: int = 0):
         return func
 
 
@@ -24,6 +24,8 @@ fake_localstore = ModuleType("nonebot_plugin_localstore")
 
 
 class DummyScheduler:
+    running = True
+
     def scheduled_job(self, *args, **kwargs):
         def decorator(func):
             return func
@@ -37,6 +39,12 @@ class DummyScheduler:
         return None
 
     def get_job(self, *args, **kwargs):
+        return None
+
+    def remove_listener(self, *args, **kwargs):
+        return None
+
+    def remove_job(self, *args, **kwargs):
         return None
 
 
