@@ -257,4 +257,4 @@ else:
         misfire_grace_time=5,
     )
 
-get_driver().on_shutdown(_stop_dynamic_scheduler, priority=10)
+get_driver().on_shutdown(_stop_dynamic_scheduler)
